@@ -1,13 +1,25 @@
+import { Provider } from '@/components/ui/provider';
+import { OceanBackground } from './components/layout/OceanBackground';
+import { AppRouter } from './router';
+import { useAuthInitializer } from './hooks/useAuthInitializer';
 
-import {Provider} from '@/components/ui/provider';
-
+/**
+ * Main App Component
+ * - Wraps entire app with Provider for Chakra UI
+ * - Uses OceanBackground for glassmorphism theme
+ * - Router handles all page navigation
+ * - Initializes auth state from storage
+ */
 function App() {
-  return (
-    <>
-      <Provider>
+  // Initialize auth state from localStorage on app load
+  useAuthInitializer();
 
-      </Provider>
-    </>
+  return (
+    <Provider>
+      <OceanBackground>
+        <AppRouter />
+      </OceanBackground>
+    </Provider>
   );
 }
 
