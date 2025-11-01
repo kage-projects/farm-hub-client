@@ -1,5 +1,6 @@
 import { Table as ChakraTable, Box, HStack } from '@chakra-ui/react';
 import { useState } from 'react';
+import { useColorModeValue } from '../ui/color-mode';
 
 /**
  * Table column configuration
@@ -71,11 +72,19 @@ export function Table<T extends Record<string, any>>({
     return typeof accessor === 'function' ? accessor(row) : row[accessor];
   };
 
+  // Color mode aware styling
+  const headerBg = useColorModeValue('gray.100', 'gray.800');
+  const headerHoverBg = useColorModeValue('gray.200', 'gray.700');
+  const headerTextColor = useColorModeValue('gray.900', 'gray.50');
+  const rowHoverBg = useColorModeValue('gray.50', 'gray.900');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const cellTextColor = useColorModeValue('gray.800', 'gray.200');
+
   return (
     <Box overflowX="auto">
       <ChakraTable.Root variant={variant}>
         <ChakraTable.Header>
-          <ChakraTable.Row bg="gray.50">
+          <ChakraTable.Row bg={headerBg}>
             {columns.map((column, index) => {
               const accessor = column.accessor;
               const isSortable = column.sortable && typeof accessor !== 'function';
@@ -87,10 +96,11 @@ export function Table<T extends Record<string, any>>({
                   textAlign={column.isNumeric ? 'end' : 'start'}
                   fontWeight="600"
                   textTransform="none"
-                  borderColor="gray.200"
+                  borderColor={borderColor}
+                  color={headerTextColor}
                   cursor={isSortable ? 'pointer' : 'default'}
                   onClick={() => isSortable && handleSort(accessor as keyof T)}
-                  _hover={isSortable ? { bg: 'gray.100' } : undefined}
+                  _hover={isSortable ? { bg: headerHoverBg } : undefined}
                 >
                   <HStack justify={column.isNumeric ? 'flex-end' : 'flex-start'} gap={2}>
                     <span>{column.header}</span>
@@ -109,13 +119,14 @@ export function Table<T extends Record<string, any>>({
           {sortedData.map((row, rowIndex) => (
             <ChakraTable.Row
               key={rowIndex}
-              _hover={hoverable ? { bg: 'gray.50' } : undefined}
+              _hover={hoverable ? { bg: rowHoverBg } : undefined}
             >
               {columns.map((column, colIndex) => (
                 <ChakraTable.Cell
                   key={colIndex}
                   textAlign={column.isNumeric ? 'end' : 'start'}
-                  borderColor="gray.200"
+                  borderColor={borderColor}
+                  color={cellTextColor}
                 >
                   {getCellValue(row, column.accessor)}
                 </ChakraTable.Cell>

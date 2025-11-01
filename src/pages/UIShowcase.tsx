@@ -24,6 +24,9 @@ export function UIShowcase() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // Text colors for optimal readability in light/dark mode
+  const textPrimary = useColorModeValue('gray.900', 'gray.50');
+  const textSecondary = useColorModeValue('gray.700', 'gray.300');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const borderColor = useColorModeValue('cyan.200', 'cyan.700');
 
@@ -144,11 +147,11 @@ export function UIShowcase() {
                 <VStack align="start" gap={2}>
                   <HStack>
                     <Text fontSize="4xl">🐟</Text>
-                    <Heading size="2xl" fontWeight="800">
+                    <Heading size="2xl" fontWeight="800" color={textPrimary}>
                       Farm Dashboard
                     </Heading>
                   </HStack>
-                  <Text fontSize="lg" color={mutedColor}>
+                  <Text fontSize="lg" color={textSecondary}>
                     Real-time monitoring and management for aquatic farming operations
                   </Text>
                   <HStack gap={2} mt={2}>
@@ -207,10 +210,10 @@ export function UIShowcase() {
                       <Tag colorScheme="success" size="sm">+2.3%</Tag>
                     </HStack>
                     <VStack align="start" gap={1}>
-                      <Text fontSize="sm" color={mutedColor} fontWeight="500">
+                      <Text fontSize="sm" color={textSecondary} fontWeight="500">
                         Avg Temperature
                       </Text>
-                      <Heading size="xl">28.5°C</Heading>
+                      <Heading size="xl" color={textPrimary}>28.5°C</Heading>
                       <Text fontSize="xs" color={mutedColor}>
                         Optimal range: 26-30°C
                       </Text>
@@ -227,10 +230,10 @@ export function UIShowcase() {
                       <Tag colorScheme="info" size="sm">Normal</Tag>
                     </HStack>
                     <VStack align="start" gap={1}>
-                      <Text fontSize="sm" color={mutedColor} fontWeight="500">
+                      <Text fontSize="sm" color={textSecondary} fontWeight="500">
                         Water Quality
                       </Text>
-                      <Heading size="xl">7.4 pH</Heading>
+                      <Heading size="xl" color={textPrimary}>7.4 pH</Heading>
                       <Text fontSize="xs" color={mutedColor}>
                         Dissolved O₂: 6.2 mg/L
                       </Text>
@@ -247,10 +250,10 @@ export function UIShowcase() {
                       <Tag colorScheme="brand" size="sm">Active</Tag>
                     </HStack>
                     <VStack align="start" gap={1}>
-                      <Text fontSize="sm" color={mutedColor} fontWeight="500">
+                      <Text fontSize="sm" color={textSecondary} fontWeight="500">
                         Total Population
                       </Text>
-                      <Heading size="xl">20,000</Heading>
+                      <Heading size="xl" color={textPrimary}>20,000</Heading>
                       <Text fontSize="xs" color={mutedColor}>
                         Across 3 active ponds
                       </Text>
@@ -267,10 +270,10 @@ export function UIShowcase() {
                       <Tag colorScheme="success" size="sm">+15%</Tag>
                     </HStack>
                     <VStack align="start" gap={1}>
-                      <Text fontSize="sm" color={mutedColor} fontWeight="500">
+                      <Text fontSize="sm" color={textSecondary} fontWeight="500">
                         Growth Rate
                       </Text>
-                      <Heading size="xl">12.5%</Heading>
+                      <Heading size="xl" color={textPrimary}>12.5%</Heading>
                       <Text fontSize="xs" color={mutedColor}>
                         Monthly average
                       </Text>
@@ -284,7 +287,7 @@ export function UIShowcase() {
 
             {/* Feed Management Section */}
             <Box>
-              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3}>
+              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3} color={textPrimary}>
                 <Text>🎣</Text>
                 Feed Management System
               </Heading>
@@ -293,8 +296,8 @@ export function UIShowcase() {
                 {/* Feed Form */}
                 <Card variant="elevated">
                   <CardHeader>
-                    <Heading size="md">Schedule Feeding</Heading>
-                    <Text fontSize="sm" color={mutedColor}>
+                    <Heading size="md" color={textPrimary}>Schedule Feeding</Heading>
+                    <Text fontSize="sm" color={textSecondary}>
                       Automated feed distribution system
                     </Text>
                   </CardHeader>
@@ -353,6 +356,7 @@ export function UIShowcase() {
                         Clear Form
                       </CustomButton>
                       <CustomButton
+                        variant="solid"
                         colorScheme="brand"
                         loading={loading}
                         loadingText="Scheduling..."
@@ -368,7 +372,7 @@ export function UIShowcase() {
                 {/* Feed Schedule Summary */}
                 <Card variant="glass">
                   <CardHeader>
-                    <Heading size="md">Today's Schedule</Heading>
+                    <Heading size="md" color={textPrimary}>Today's Schedule</Heading>
                   </CardHeader>
                   <CardBody>
                     <VStack align="stretch" gap={3}>
@@ -381,10 +385,10 @@ export function UIShowcase() {
                       >
                         <HStack justify="space-between">
                           <VStack align="start" gap={0}>
-                            <Text fontSize="sm" fontWeight="600">
+                            <Text fontSize="sm" fontWeight="600" color={useColorModeValue('gray.900', 'gray.50')}>
                               06:00 AM
                             </Text>
-                            <Text fontSize="xs" color={mutedColor}>
+                            <Text fontSize="xs" color={textSecondary}>
                               Pond A1 - 25kg
                             </Text>
                           </VStack>
@@ -453,7 +457,7 @@ export function UIShowcase() {
             {/* Pond Status Table */}
             <Box>
               <HStack justify="space-between" mb={6}>
-                <Heading size="lg" display="flex" alignItems="center" gap={3}>
+                <Heading size="lg" display="flex" alignItems="center" gap={3} color={textPrimary}>
                   <Text>🏊</Text>
                   Pond Status Overview
                 </Heading>
@@ -488,7 +492,7 @@ export function UIShowcase() {
 
             {/* Loading State Demo */}
             <Box>
-              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3}>
+              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3} color={textPrimary}>
                 <Text>⏳</Text>
                 Real-time Sensor Data
               </Heading>
@@ -497,7 +501,7 @@ export function UIShowcase() {
                 <CardBody>
                   <VStack align="stretch" gap={4}>
                     <HStack justify="space-between">
-                      <Text fontWeight="600">Loading sensor readings...</Text>
+                      <Text fontWeight="600" color={textPrimary}>Loading sensor readings...</Text>
                       <Spinner size="sm" />
                     </HStack>
                     <Skeleton height="60px" />
@@ -510,7 +514,7 @@ export function UIShowcase() {
 
             {/* Empty State Demo */}
             <Box>
-              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3}>
+              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3} color={textPrimary}>
                 <Text>📦</Text>
                 Inventory Management
               </Heading>
@@ -535,19 +539,19 @@ export function UIShowcase() {
 
             {/* Button Showcase in Context */}
             <Box>
-              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3}>
+              <Heading size="lg" mb={6} display="flex" alignItems="center" gap={3} color={textPrimary}>
                 <Text>⚡</Text>
                 Quick Actions
               </Heading>
               
               <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
-                <CustomButton colorScheme="brand" size="lg" w="full">
+                <CustomButton variant="solid" colorScheme="brand" size="lg" w="full">
                   🔔 Set Alert
                 </CustomButton>
-                <CustomButton colorScheme="secondary" size="lg" w="full">
+                <CustomButton variant="solid" colorScheme="secondary" size="lg" w="full">
                   📸 Add Photo
                 </CustomButton>
-                <CustomButton colorScheme="accent" size="lg" w="full">
+                <CustomButton variant="solid" colorScheme="accent" size="lg" w="full">
                   📊 Analytics
                 </CustomButton>
                 <CustomButton variant="outline" colorScheme="brand" size="lg" w="full">

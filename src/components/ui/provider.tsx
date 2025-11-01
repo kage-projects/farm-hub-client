@@ -5,7 +5,7 @@ import {
   ColorModeProvider,
   type ColorModeProviderProps,
 } from "./color-mode"
-import customTheme from "../../theme"
+import customTheme from "../../design"
 
 // Merge custom theme with default config
 const system = createSystem(defaultConfig, customTheme)

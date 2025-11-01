@@ -1,5 +1,6 @@
 import { VStack, Heading, Text, Box } from '@chakra-ui/react';
 import { Button } from '../button/Button';
+import { useColorModeValue } from '../ui/color-mode';
 
 /**
  * EmptyState component props
@@ -25,23 +26,27 @@ export interface EmptyStateProps {
  * - Optional action button
  */
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
+  const iconColor = useColorModeValue('gray.400', 'gray.500');
+  const titleColor = useColorModeValue('gray.800', 'gray.100');
+  const descColor = useColorModeValue('gray.600', 'gray.400');
+
   return (
     <VStack gap={4} py={12} textAlign="center" maxW="md" mx="auto">
       {/* Icon */}
       {icon && (
-        <Box fontSize="5xl" color="gray.400">
+        <Box fontSize="5xl" color={iconColor}>
           {icon}
         </Box>
       )}
 
       {/* Title */}
-      <Heading size="lg" color="gray.700">
+      <Heading size="lg" color={titleColor}>
         {title}
       </Heading>
 
       {/* Description */}
       {description && (
-        <Text color="gray.600" fontSize="md">
+        <Text color={descColor} fontSize="md">
           {description}
         </Text>
       )}
