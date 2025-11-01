@@ -1,4 +1,4 @@
-import { Container, VStack, HStack, Heading, Text, Box } from '@chakra-ui/react';
+import { Container, VStack, HStack, Heading, Text, Box, Code } from '@chakra-ui/react';
 import { Alert } from '../../components/feedback/Alert';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -10,7 +10,7 @@ import { LocationStep, type LocationFormData } from './components/LocationStep';
 import { ProjectDetailsStep, type ProjectDetailsFormData } from './components/ProjectDetailsStep';
 import { RiskLevelStep, type RiskLevelFormData } from './components/RiskLevelStep';
 import { saveDraft, loadDraft } from '../../utils/storage';
-import { createProject } from './services/projectApi';
+import { createProjectStream, type ProjectResponse } from './services/projectApi';
 import { FiArrowLeft, FiArrowRight, FiCheck } from 'react-icons/fi';
 
 const TOTAL_STEPS = 3;
@@ -39,6 +39,12 @@ export function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
+  // Streaming states
+  const [streamProgress, setStreamProgress] = useState(0);
+  const [streamMessage, setStreamMessage] = useState<string>('');
+  const [streamChunks, setStreamChunks] = useState<string[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Load draft on mount
   useEffect(() => {
@@ -103,7 +109,11 @@ export function OnboardingPage() {
     }
 
     setIsLoading(true);
+    setIsStreaming(true);
     setError(null);
+    setStreamProgress(0);
+    setStreamMessage('');
+    setStreamChunks([]);
 
     try {
       const projectData = {
@@ -115,14 +125,45 @@ export function OnboardingPage() {
         ...(formData.lat !== undefined && { lat: formData.lat }),
       };
 
-      const response = await createProject(projectData);
-      
-      // Navigate to project result page with response data
-      // Navigate using project ID so it can be accessed via URL
-      navigate(`/onboarding/result/${response.data.id}`, { state: { projectResult: response } });
+      await createProjectStream(projectData, {
+        onStatus: (message, progress) => {
+          setStreamMessage(message);
+          setStreamProgress(progress);
+        },
+        onChunk: (text, progress) => {
+          setStreamChunks((prev) => [...prev, text]);
+          setStreamProgress(progress);
+        },
+        onResult: (_data, progress) => {
+          setStreamProgress(progress);
+        },
+        onCompleted: (data, ringkasan_awal) => {
+          setStreamProgress(100);
+          setStreamMessage('Analisis selesai!');
+          
+          // Build response object matching ProjectResponse format
+          const response: ProjectResponse = {
+            success: true,
+            message: 'Project berhasil dibuat dan dianalisis',
+            data,
+            ringkasan_awal,
+          };
+          
+          // Navigate to project result page with response data
+          navigate(`/onboarding/result/${data.id}`, { 
+            state: { projectResult: response } 
+          });
+        },
+        onError: (message) => {
+          setError(message);
+          setIsStreaming(false);
+          setIsLoading(false);
+        },
+      });
     } catch (err: any) {
       const errorMessage = err.message || 'Terjadi kesalahan saat membuat proyek';
       setError(errorMessage);
+      setIsStreaming(false);
       
       // Handle validation errors from API
       if (err.errors) {
@@ -259,12 +300,72 @@ export function OnboardingPage() {
             />
           )}
 
+          {/* Streaming Progress */}
+          {isStreaming && (
+            <Card variant="elevated">
+              <CardBody>
+                <VStack gap={4} align="stretch">
+                  <VStack align="start" gap={2}>
+                    <HStack justify="space-between" w="full">
+                      <Text fontSize="sm" fontWeight="medium" color={textPrimary}>
+                        {streamMessage || 'Memproses...'}
+                      </Text>
+                      <Text fontSize="sm" color={textSecondary}>
+                        {streamProgress}%
+                      </Text>
+                    </HStack>
+                    <Box
+                      w="full"
+                      h="2"
+                      bg={useColorModeValue('gray.200', 'gray.700')}
+                      borderRadius="full"
+                      overflow="hidden"
+                    >
+                      <Box
+                        h="full"
+                        bg="brand.600"
+                        w={`${streamProgress}%`}
+                        transition="width 0.3s ease"
+                        borderRadius="full"
+                      />
+                    </Box>
+                  </VStack>
+                  
+                  {/* Stream Chunks Display */}
+                  {streamChunks.length > 0 && (
+                    <Box
+                      maxH="200px"
+                      overflowY="auto"
+                      p={3}
+                      bg={useColorModeValue('gray.50', 'gray.900')}
+                      borderRadius="md"
+                      border="1px solid"
+                      borderColor={useColorModeValue('gray.200', 'gray.700')}
+                    >
+                      <Code 
+                        fontSize="xs" 
+                        colorScheme="gray"
+                        display="block"
+                        whiteSpace="pre-wrap"
+                        wordBreak="break-word"
+                      >
+                        {streamChunks.join('')}
+                      </Code>
+                    </Box>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
+          )}
+
           {/* Step Content */}
-          <Card variant="elevated">
-            <CardBody>
-              {renderStep()}
-            </CardBody>
-          </Card>
+          {!isStreaming && (
+            <Card variant="elevated">
+              <CardBody>
+                {renderStep()}
+              </CardBody>
+            </Card>
+          )}
 
           {/* Navigation Buttons */}
           <HStack justify="space-between" gap={4}>
