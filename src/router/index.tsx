@@ -1,9 +1,11 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { LandingPage } from '../pages/LandingPage';
+import { LandingPage } from '../features/landing/LandingPage';
 import { AuthPage } from '../features/auth/AuthPage';
-import { DashboardPage } from '../pages/DashboardPage';
+import { ProtectedRoute, PublicRoute } from '../features/auth/components';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { InputPage } from '../pages/InputPage';
-import { OnboardingPage } from '../pages/OnboardingPage';
+import { OnboardingPage } from '../features/onboarding/OnboardingPage';
+import { ProjectResultPage } from '../features/onboarding/ProjectResultPage';
 import { SuppliersPage } from '../pages/SuppliersPage';
 import { RFQPage } from '../pages/RFQPage';
 import { QuotationPage } from '../pages/QuotationPage';
@@ -19,18 +21,28 @@ import { UIShowcase } from '../pages/UIShowcase';
 /**
  * Application Routes
  * 
- * Public routes:
- * - / - Landing page
- * - /login - Login page
- * - /register - Register page
+ * Public routes (bisa diakses semua):
+ * - / - Landing page (bisa diakses semua)
  * - /showcase - UI showcase (development)
  * 
- * Protected routes (require auth):
+ * Public routes (hanya untuk user belum login):
+ * - /login - Login page (redirect ke dashboard jika sudah login)
+ * - /register - Register page (redirect ke dashboard jika sudah login)
+ * 
+ * Protected routes (hanya untuk user sudah login):
  * - /dashboard - Main dashboard
  * - /input - Input project data (legacy)
  * - /onboarding - Onboarding wizard (new)
  * - /summary - Generate summary
  * - /plan - Complete plan with submenus
+ * - /quick-plan - Quick plan generator
+ * - /suppliers - Supplier directory
+ * - /rfq - RFQ management
+ * - /rfq/:id/quotation - Quotation page
+ * - /contract/:id - Contract page
+ * - /qc/:orderId - QC page
+ * - /harvest - Harvest planner
+ * - /notifications - Notifications
  */
 export const router = createBrowserRouter([
   {
@@ -39,63 +51,139 @@ export const router = createBrowserRouter([
   },
   {
     path: '/login',
-    element: <AuthPage />,
+    element: (
+      <PublicRoute>
+        <AuthPage />
+      </PublicRoute>
+    ),
   },
   {
     path: '/register',
-    element: <AuthPage />,
+    element: (
+      <PublicRoute>
+        <AuthPage />
+      </PublicRoute>
+    ),
   },
   {
     path: '/dashboard',
-    element: <DashboardPage />,
+    element: (
+      <ProtectedRoute>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/input',
-    element: <InputPage />,
+    element: (
+      <ProtectedRoute>
+        <InputPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/onboarding',
-    element: <OnboardingPage />,
+    element: (
+      <ProtectedRoute>
+        <OnboardingPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/onboarding/result',
+    element: (
+      <ProtectedRoute>
+        <ProjectResultPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/onboarding/result/:id',
+    element: (
+      <ProtectedRoute>
+        <ProjectResultPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/suppliers',
-    element: <SuppliersPage />,
+    element: (
+      <ProtectedRoute>
+        <SuppliersPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/rfq',
-    element: <RFQPage />,
+    element: (
+      <ProtectedRoute>
+        <RFQPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/rfq/:id/quotation',
-    element: <QuotationPage />,
+    element: (
+      <ProtectedRoute>
+        <QuotationPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/contract/:id',
-    element: <ContractPage />,
+    element: (
+      <ProtectedRoute>
+        <ContractPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/qc/:orderId',
-    element: <QCPage />,
+    element: (
+      <ProtectedRoute>
+        <QCPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/harvest',
-    element: <HarvestPlannerPage />,
+    element: (
+      <ProtectedRoute>
+        <HarvestPlannerPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/notifications',
-    element: <NotificationsPage />,
+    element: (
+      <ProtectedRoute>
+        <NotificationsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/summary',
-    element: <SummaryPage />,
+    element: (
+      <ProtectedRoute>
+        <SummaryPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/plan',
-    element: <PlanPage />,
+    element: (
+      <ProtectedRoute>
+        <PlanPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/quick-plan',
-    element: <QuickPlanPage />,
+    element: (
+      <ProtectedRoute>
+        <QuickPlanPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/showcase',

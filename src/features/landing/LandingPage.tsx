@@ -1,17 +1,21 @@
 import { Container, VStack, HStack, Heading, Text, Button, SimpleGrid, Box } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
-import { Navbar } from '../components/navbar/Navbar';
-import { OceanBackground } from '../components/layout/OceanBackground';
-import { useColorModeValue } from '../components/ui/color-mode';
-import { Button as CustomButton } from '../components/button/Button';
+import { Link, useNavigate } from 'react-router-dom';
+import { Navbar } from '../../components/navbar/Navbar';
+import { OceanBackground } from '../../components/layout/OceanBackground';
+import { useColorModeValue } from '../../components/ui/color-mode';
+import { Button as CustomButton } from '../../components/button/Button';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Landing Page
  * - Hero section dengan CTA
  * - Features highlight
- * - CTA untuk register/login
+ * - CTA untuk register/login (jika belum login)
+ * - CTA untuk dashboard (jika sudah login)
  */
 export function LandingPage() {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
 
@@ -46,7 +50,12 @@ export function LandingPage() {
           { label: 'Fitur', href: '#features' },
           { label: 'Tentang', href: '#about' },
         ]}
-        cta={{ label: 'Mulai Sekarang', href: '/register' }}
+        cta={
+          isAuthenticated
+            ? { label: 'Dashboard', href: '/dashboard' }
+            : { label: 'Mulai Sekarang', href: '/register' }
+        }
+        user={user ? { name: user.name || user.email || 'User' } : null}
       />
       <Container maxW="7xl" py={20}>
         {/* Hero Section */}
@@ -60,21 +69,44 @@ export function LandingPage() {
             Dapatkan analisis lengkap dan rencana detail untuk memulai proyek budidaya ikan Anda dengan confidence
           </Text>
           <HStack gap={4} flexWrap="wrap" justify="center">
-            <Link to="/dashboard">
-              <CustomButton variant="solid" colorScheme="brand" size="lg">
-                Coba Demo
-              </CustomButton>
-            </Link>
-            <Link to="/register">
-              <CustomButton variant="solid" colorScheme="accent" size="lg">
-                Daftar Gratis
-              </CustomButton>
-            </Link>
-            <Link to="/login">
-              <CustomButton variant="outline" colorScheme="brand" size="lg">
-                Masuk
-              </CustomButton>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <CustomButton
+                  variant="solid"
+                  colorScheme="brand"
+                  size="lg"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Masuk ke Dashboard
+                </CustomButton>
+                <CustomButton
+                  variant="outline"
+                  colorScheme="brand"
+                  size="lg"
+                  onClick={() => navigate('/quick-plan')}
+                >
+                  Buat Proyek Baru
+                </CustomButton>
+              </>
+            ) : (
+              <>
+                <Link to="/dashboard">
+                  <CustomButton variant="solid" colorScheme="brand" size="lg">
+                    Coba Demo
+                  </CustomButton>
+                </Link>
+                <Link to="/register">
+                  <CustomButton variant="solid" colorScheme="accent" size="lg">
+                    Daftar Gratis
+                  </CustomButton>
+                </Link>
+                <Link to="/login">
+                  <CustomButton variant="outline" colorScheme="brand" size="lg">
+                    Masuk
+                  </CustomButton>
+                </Link>
+              </>
+            )}
           </HStack>
         </VStack>
 
@@ -127,16 +159,29 @@ export function LandingPage() {
               Daftar sekarang dan dapatkan analisis kelayakan gratis untuk proyek budidaya ikan pertama Anda
             </Text>
             <HStack gap={4} justify="center">
-              <Link to="/dashboard">
-                <CustomButton variant="outline" colorScheme="brand" size="lg">
-                  Coba Demo
+              {isAuthenticated ? (
+                <CustomButton
+                  variant="solid"
+                  colorScheme="brand"
+                  size="lg"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Masuk ke Dashboard
                 </CustomButton>
-              </Link>
-              <Link to="/register">
-                <CustomButton variant="solid" colorScheme="brand" size="lg">
-                  Daftar Gratis
-                </CustomButton>
-              </Link>
+              ) : (
+                <>
+                  <Link to="/dashboard">
+                    <CustomButton variant="outline" colorScheme="brand" size="lg">
+                      Coba Demo
+                    </CustomButton>
+                  </Link>
+                  <Link to="/register">
+                    <CustomButton variant="solid" colorScheme="brand" size="lg">
+                      Daftar Gratis
+                    </CustomButton>
+                  </Link>
+                </>
+              )}
             </HStack>
           </VStack>
         </Box>
