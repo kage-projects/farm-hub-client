@@ -29,7 +29,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         variant="outline"
         bg={glassBg}
         backdropFilter="blur(12px)"
-        WebkitBackdropFilter="blur(12px)"
+        css={{
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
         borderColor={invalid ? 'red.400' : borderColor}
         rounded="xl"
         h={12}

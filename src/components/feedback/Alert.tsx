@@ -118,7 +118,9 @@ export const Alert = ({
       borderColor={styles.borderColor}
       border={styles.border}
       backdropFilter={styles.backdropFilter}
-      WebkitBackdropFilter={styles.backdropFilter}
+      css={{
+        WebkitBackdropFilter: styles.backdropFilter,
+      }}
       role="alert"
       transition="all 0.3s"
       _hover={{

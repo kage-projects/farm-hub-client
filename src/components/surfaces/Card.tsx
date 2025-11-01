@@ -46,7 +46,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           '0 4px 24px -8px rgba(0, 0, 0, 0.4)'
         ),
         backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        css: {
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        },
       },
       elevated: {
         bg: elevatedBg,
@@ -57,7 +59,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           '0 10px 40px -15px rgba(0, 0, 0, 0.5)'
         ),
         backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        css: {
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        },
       },
     };
 
