@@ -51,7 +51,7 @@ export function LandingPage() {
       <Container maxW="7xl" py={20}>
         {/* Hero Section */}
         <VStack gap={8} textAlign="center" py={16}>
-          <Heading size="3xl" color={textPrimary} fontWeight="800">
+          <Heading fontSize="3xl" fontWeight="800" color={textPrimary}>
             Analisis Kelayakan Proyek
             <br />
             Budidaya Ikan di Sumatra Barat
@@ -59,10 +59,15 @@ export function LandingPage() {
           <Text fontSize="xl" color={textSecondary} maxW="2xl">
             Dapatkan analisis lengkap dan rencana detail untuk memulai proyek budidaya ikan Anda dengan confidence
           </Text>
-          <HStack gap={4}>
-            <Link to="/register">
+          <HStack gap={4} flexWrap="wrap" justify="center">
+            <Link to="/dashboard">
               <CustomButton variant="solid" colorScheme="brand" size="lg">
-                Mulai Sekarang
+                Coba Demo
+              </CustomButton>
+            </Link>
+            <Link to="/register">
+              <CustomButton variant="solid" colorScheme="accent" size="lg">
+                Daftar Gratis
               </CustomButton>
             </Link>
             <Link to="/login">
@@ -77,7 +82,7 @@ export function LandingPage() {
         <Box id="features" py={16}>
           <VStack gap={12}>
             <VStack gap={2} textAlign="center">
-              <Heading size="2xl" color={textPrimary}>
+              <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
                 Fitur Unggulan
               </Heading>
               <Text fontSize="lg" color={textSecondary} maxW="xl">
@@ -100,7 +105,7 @@ export function LandingPage() {
                   <Text fontSize="4xl" mb={3}>
                     {feature.icon}
                   </Text>
-                  <Heading size="md" color={textPrimary} mb={2}>
+                  <Heading fontSize="md" fontWeight="semibold" color={textPrimary} mb={2}>
                     {feature.title}
                   </Heading>
                   <Text fontSize="sm" color={textSecondary}>
@@ -115,17 +120,24 @@ export function LandingPage() {
         {/* CTA Section */}
         <Box py={16} textAlign="center">
           <VStack gap={6}>
-            <Heading size="xl" color={textPrimary}>
+            <Heading fontSize="xl" fontWeight="bold" color={textPrimary}>
               Siap Memulai Proyek Anda?
             </Heading>
             <Text fontSize="lg" color={textSecondary} maxW="lg">
               Daftar sekarang dan dapatkan analisis kelayakan gratis untuk proyek budidaya ikan pertama Anda
             </Text>
-            <Link to="/register">
-              <CustomButton variant="solid" colorScheme="brand" size="lg">
-                Daftar Gratis
-              </CustomButton>
-            </Link>
+            <HStack gap={4} justify="center">
+              <Link to="/dashboard">
+                <CustomButton variant="outline" colorScheme="brand" size="lg">
+                  Coba Demo
+                </CustomButton>
+              </Link>
+              <Link to="/register">
+                <CustomButton variant="solid" colorScheme="brand" size="lg">
+                  Daftar Gratis
+                </CustomButton>
+              </Link>
+            </HStack>
           </VStack>
         </Box>
       </Container>

@@ -4,8 +4,17 @@ import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { InputPage } from '../pages/InputPage';
+import { OnboardingPage } from '../pages/OnboardingPage';
+import { SuppliersPage } from '../pages/SuppliersPage';
+import { RFQPage } from '../pages/RFQPage';
+import { QuotationPage } from '../pages/QuotationPage';
+import { ContractPage } from '../pages/ContractPage';
+import { QCPage } from '../pages/QCPage';
+import { HarvestPlannerPage } from '../pages/HarvestPlannerPage';
+import { NotificationsPage } from '../pages/NotificationsPage';
 import { SummaryPage } from '../pages/SummaryPage';
 import { PlanPage } from '../pages/PlanPage';
+import { QuickPlanPage } from '../pages/QuickPlanPage';
 import { UIShowcase } from '../pages/UIShowcase';
 
 /**
@@ -19,7 +28,8 @@ import { UIShowcase } from '../pages/UIShowcase';
  * 
  * Protected routes (require auth):
  * - /dashboard - Main dashboard
- * - /input - Input project data
+ * - /input - Input project data (legacy)
+ * - /onboarding - Onboarding wizard (new)
  * - /summary - Generate summary
  * - /plan - Complete plan with submenus
  */
@@ -45,12 +55,48 @@ export const router = createBrowserRouter([
     element: <InputPage />,
   },
   {
+    path: '/onboarding',
+    element: <OnboardingPage />,
+  },
+  {
+    path: '/suppliers',
+    element: <SuppliersPage />,
+  },
+  {
+    path: '/rfq',
+    element: <RFQPage />,
+  },
+  {
+    path: '/rfq/:id/quotation',
+    element: <QuotationPage />,
+  },
+  {
+    path: '/contract/:id',
+    element: <ContractPage />,
+  },
+  {
+    path: '/qc/:orderId',
+    element: <QCPage />,
+  },
+  {
+    path: '/harvest',
+    element: <HarvestPlannerPage />,
+  },
+  {
+    path: '/notifications',
+    element: <NotificationsPage />,
+  },
+  {
     path: '/summary',
     element: <SummaryPage />,
   },
   {
     path: '/plan',
     element: <PlanPage />,
+  },
+  {
+    path: '/quick-plan',
+    element: <QuickPlanPage />,
   },
   {
     path: '/showcase',

@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { FiChevronDown, FiMenu, FiX } from "react-icons/fi";
 import { useColorModeValue, ColorModeButton } from "../ui/color-mode";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 type ChildItem = {
   label: string;
@@ -304,6 +305,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               </HStack>
             )}
             
+            <NotificationBell />
+            
             <ChakraLink href={cta.href} _hover={{ textDecoration: "none" }}>
               <Button 
                 colorPalette="brand" 
@@ -324,6 +327,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               size="sm"
               _hover={{ bg: hoverBgLight }}
             />
+            <NotificationBell />
             <IconButton
               aria-label="Menu"
               variant="ghost"
