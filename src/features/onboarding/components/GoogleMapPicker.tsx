@@ -1,6 +1,7 @@
 import { Box } from '@chakra-ui/react';
 import { useColorModeValue } from '../../../components/ui/color-mode';
 import { useEffect, useRef, useState } from 'react';
+import { loadGoogleMapsAPI } from '../../../utils/googleMapsLoader';
 
 export interface GoogleMapPickerProps {
   lat?: number;
@@ -8,21 +9,6 @@ export interface GoogleMapPickerProps {
   onMapClick?: (lat: number, lng: number) => void;
   height?: string;
   centerCity?: { lat: number; lng: number };
-}
-
-// Declare Google Maps types
-declare global {
-  interface Window {
-    google: {
-      maps: {
-        Map: new (element: HTMLElement, options?: any) => any;
-        Marker: new (options?: any) => any;
-        event: {
-          addListener: (instance: any, eventName: string, handler: (e: any) => void) => void;
-        };
-      };
-    };
-  }
 }
 
 /**
@@ -49,21 +35,15 @@ export function GoogleMapPicker({
   const center = centerCity || (lat && lng ? { lat, lng } : defaultCenter);
 
   useEffect(() => {
-    // Load Google Maps API
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      script.onerror = () => {
-        console.error('Failed to load Google Maps API');
+    // Load Google Maps API (singleton - will only load once)
+    loadGoogleMapsAPI()
+      .then(() => {
+        setMapLoaded(true);
+      })
+      .catch((error) => {
+        console.error('Failed to load Google Maps API:', error);
         setMapLoaded(true); // Set to true anyway to show fallback
-      };
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
+      });
   }, []);
 
   useEffect(() => {
