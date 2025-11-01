@@ -123,3 +123,4 @@ export function getHarvestWindow(etpResult: ETPResult, flexibilityDays: number =
   return { earliest, latest, optimal };
 }
 
+

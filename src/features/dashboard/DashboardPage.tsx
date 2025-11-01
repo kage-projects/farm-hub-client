@@ -8,9 +8,10 @@ import { Card, CardBody } from '../../components/surfaces/Card';
 import { Alert } from '../../components/feedback/Alert';
 import { useColorModeValue } from '../../components/ui/color-mode';
 import { Spinner as LoadingSpinner } from '../../components/feedback/Spinner';
-import { FiPlus, FiFileText, FiCheckCircle, FiClock, FiShoppingCart, FiSearch } from 'react-icons/fi';
+import { FiPlus, FiFileText, FiCheckCircle, FiClock, FiShoppingCart, FiSearch, FiTrash2, FiX } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
-import { getAllProjects } from '../onboarding/services/projectApi';
+import { getAllProjects, deleteProject } from '../onboarding/services/projectApi';
+import { useAuth } from '../../hooks/useAuth';
 
 /**
  * Dashboard Page
@@ -20,8 +21,10 @@ import { getAllProjects } from '../onboarding/services/projectApi';
  */
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
-  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const textSecondary = useColorModeValue('gray.600', 'gray.300');
+  const iconColor = useColorModeValue('brand.600', 'brand.400');
 
   const [projects, setProjects] = useState<Array<{
     id: string;
@@ -33,6 +36,10 @@ export function DashboardPage() {
   }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch projects from API
   useEffect(() => {
@@ -106,10 +113,46 @@ export function DashboardPage() {
     navigate(`/onboarding/result/${id}`);
   };
 
-  const handleDeleteProject = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus project ini?')) {
-      // TODO: Implement delete
-      console.log('Delete project:', id);
+  const handleOpenDeleteModal = (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (project) {
+      setProjectToDelete({ id: project.id, name: project.name });
+      setIsDeleteModalOpen(true);
+      setDeleteError(null);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false);
+      setProjectToDelete(null);
+      setDeleteError(null);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteProject(projectToDelete.id);
+      
+      // Remove project from list
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+      
+      // Close modal
+      setIsDeleteModalOpen(false);
+      setProjectToDelete(null);
+      
+      // Show success (optional: bisa pakai toast)
+      alert('Proyek berhasil dihapus!');
+    } catch (err: any) {
+      const errorMessage = err.message || 'Gagal menghapus proyek';
+      setDeleteError(errorMessage);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -129,8 +172,15 @@ export function DashboardPage() {
           { label: 'Supplier', href: '/suppliers' },
           { label: 'RFQ', href: '/rfq' },
         ]}
-        cta={{ label: 'Logout', href: '/' }}
-        user={{ name: 'John Doe' }}
+        cta={{ 
+          label: 'Logout', 
+          href: '#',
+          onClick: () => {
+            logout();
+            navigate('/');
+          }
+        }}
+        user={user ? { name: user.name || user.email || 'User' } : null}
       />
       <Container maxW="7xl" py={8}>
         <VStack gap={8} align="stretch">
@@ -172,10 +222,10 @@ export function DashboardPage() {
 
           {/* Quick Actions */}
           <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} gap={4}>
-            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/quick-plan')}>
+            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/quick-plan')} _hover={{ transform: 'translateY(-2px)' }} transition="all 0.2s">
               <CardBody>
                 <HStack gap={3}>
-                  <Box fontSize="2xl" color="brand.600">
+                  <Box fontSize="2xl" color={useColorModeValue('brand.600', 'brand.400')}>
                     <FiPlus />
                   </Box>
                   <VStack align="start" gap={0} flex={1}>
@@ -189,10 +239,10 @@ export function DashboardPage() {
                 </HStack>
               </CardBody>
             </Card>
-            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/onboarding')}>
+            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/onboarding')} _hover={{ transform: 'translateY(-2px)' }} transition="all 0.2s">
               <CardBody>
                 <HStack gap={3}>
-                  <Box fontSize="2xl" color="brand.600">
+                  <Box fontSize="2xl" color={useColorModeValue('brand.600', 'brand.400')}>
                     <FiPlus />
                   </Box>
                   <VStack align="start" gap={0} flex={1}>
@@ -206,10 +256,10 @@ export function DashboardPage() {
                 </HStack>
               </CardBody>
             </Card>
-            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/suppliers')}>
+            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/suppliers')} _hover={{ transform: 'translateY(-2px)' }} transition="all 0.2s">
               <CardBody>
                 <HStack gap={3}>
-                  <Box fontSize="2xl" color="secondary.600">
+                  <Box fontSize="2xl" color={useColorModeValue('secondary.600', 'secondary.400')}>
                     <FiSearch />
                   </Box>
                   <VStack align="start" gap={0} flex={1}>
@@ -223,10 +273,10 @@ export function DashboardPage() {
                 </HStack>
               </CardBody>
             </Card>
-            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/rfq')}>
+            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/rfq')} _hover={{ transform: 'translateY(-2px)' }} transition="all 0.2s">
               <CardBody>
                 <HStack gap={3}>
-                  <Box fontSize="2xl" color="accent.600">
+                  <Box fontSize="2xl" color={useColorModeValue('accent.600', 'accent.400')}>
                     <FiShoppingCart />
                   </Box>
                   <VStack align="start" gap={0} flex={1}>
@@ -240,10 +290,10 @@ export function DashboardPage() {
                 </HStack>
               </CardBody>
             </Card>
-            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/harvest')}>
+            <Card variant="elevated" cursor="pointer" onClick={() => navigate('/harvest')} _hover={{ transform: 'translateY(-2px)' }} transition="all 0.2s">
               <CardBody>
                 <HStack gap={3}>
-                  <Box fontSize="2xl" color="accent.600">
+                  <Box fontSize="2xl" color={useColorModeValue('accent.600', 'accent.400')}>
                     <FiClock />
                   </Box>
                   <VStack align="start" gap={0} flex={1}>
@@ -336,7 +386,7 @@ export function DashboardPage() {
                     {...project}
                     onView={handleViewProject}
                     onEdit={handleEditProject}
-                    onDelete={handleDeleteProject}
+                    onDelete={handleOpenDeleteModal}
                   />
                 ))}
               </SimpleGrid>
@@ -344,6 +394,130 @@ export function DashboardPage() {
           </VStack>
         </VStack>
       </Container>
+
+      {/* Delete Project Confirmation Modal */}
+      {isDeleteModalOpen && projectToDelete && (
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bg="blackAlpha.600"
+          zIndex={1000}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          p={4}
+          onClick={handleCloseDeleteModal}
+        >
+          <Box
+            maxW="md"
+            w="full"
+            bg={useColorModeValue('white', 'gray.800')}
+            borderRadius="xl"
+            boxShadow="2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <VStack align="stretch" gap={0}>
+              {/* Modal Header */}
+              <Box
+                p={6}
+                borderBottom="1px solid"
+                borderColor={useColorModeValue('gray.200', 'gray.700')}
+              >
+                <HStack justify="space-between" align="start">
+                  <VStack align="start" gap={1} flex={1}>
+                    <Heading fontSize="xl" fontWeight="bold" color={textPrimary}>
+                      Hapus Proyek
+                    </Heading>
+                    <Text fontSize="sm" color={textSecondary}>
+                      Tindakan ini tidak dapat dibatalkan
+                    </Text>
+                  </VStack>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCloseDeleteModal}
+                    disabled={isDeleting}
+                  >
+                    <FiX size={20} />
+                  </Button>
+                </HStack>
+              </Box>
+
+              {/* Modal Body */}
+              <Box p={6}>
+                <VStack gap={4} align="stretch">
+                  {deleteError && (
+                    <Alert 
+                      status="error" 
+                      variant="subtle"
+                      title={deleteError}
+                    />
+                  )}
+
+                  <Alert 
+                    status="warning" 
+                    variant="subtle"
+                    title="Peringatan"
+                    description="Apakah Anda yakin ingin menghapus proyek ini? Semua data analisis, roadmap, dan informasi terkait akan dihapus secara permanen dan tidak dapat dikembalikan."
+                  />
+
+                  <Box
+                    p={4}
+                    borderRadius="md"
+                    bg={useColorModeValue('gray.50', 'gray.800')}
+                    border="1px solid"
+                    borderColor={useColorModeValue('gray.200', 'gray.700')}
+                  >
+                    <VStack align="start" gap={2}>
+                      <Text fontSize="sm" fontWeight="semibold" color={textPrimary}>
+                        Proyek yang akan dihapus:
+                      </Text>
+                      <Text fontSize="sm" color={textPrimary}>
+                        {projectToDelete.name}
+                      </Text>
+                      <Text fontSize="xs" color={textSecondary}>
+                        ID: {projectToDelete.id}
+                      </Text>
+                    </VStack>
+                  </Box>
+                </VStack>
+              </Box>
+
+              {/* Modal Footer */}
+              <Box
+                p={6}
+                borderTop="1px solid"
+                borderColor={useColorModeValue('gray.200', 'gray.700')}
+              >
+                <HStack gap={3} justify="flex-end">
+                  <Button
+                    variant="outline"
+                    colorScheme="brand"
+                    onClick={handleCloseDeleteModal}
+                    disabled={isDeleting}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    variant="solid"
+                    colorScheme="red"
+                    onClick={handleDeleteProject}
+                    loading={isDeleting}
+                    loadingText="Menghapus..."
+                    disabled={isDeleting}
+                    leftIcon={<FiTrash2 />}
+                  >
+                    {isDeleting ? 'Menghapus...' : 'Ya, Hapus Proyek'}
+                  </Button>
+                </HStack>
+              </Box>
+            </VStack>
+          </Box>
+        </Box>
+      )}
     </>
   );
 }

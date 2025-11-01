@@ -43,15 +43,15 @@ export function LoginForm() {
   };
 
   return (
-    <Card variant="elevated" w="full">
-      <CardHeader>
-        <Heading size="lg" color={textPrimary}>
+    <Card variant="elevated" w="full" p={5}>
+      <CardHeader mb={3} pb={2}>
+        <Heading size="md" color={textPrimary}>
           Login
         </Heading>
       </CardHeader>
-      <CardBody>
+      <CardBody gap={3}>
         <form onSubmit={handleSubmit}>
-          <VStack gap={4} align="stretch">
+          <VStack gap={3} align="stretch">
             {error && (
               <Text fontSize="sm" color="red.500">
                 {error}

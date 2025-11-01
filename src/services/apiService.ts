@@ -81,6 +81,16 @@ export const patch = <T = any>(
 /**
  * DELETE request
  */
+export const deleteRequest = <T = any>(
+  endpoint: string,
+  config?: RequestConfig
+): Promise<ApiResponse<T>> => {
+  return apiRequest<T>('DELETE', endpoint, undefined, config);
+};
+
+/**
+ * DELETE request
+ */
 export const del = <T = any>(
   endpoint: string,
   config?: RequestConfig
@@ -106,10 +116,10 @@ export interface SSEEvent {
  * SSE Stream handler callback
  */
 export interface SSEStreamHandler {
-  onStatus?: (message: string, progress: number) => void;
+  onStatus?: (message: string, progress: number, section?: string) => void;
   onChunk?: (text: string, progress: number, chunkCount?: number) => void;
-  onResult?: (data: any, progress: number) => void;
-  onCompleted?: (data: any, ringkasan_awal: any) => void;
+  onResult?: (data: any, progress: number, section?: string) => void;
+  onCompleted?: (data: any, ringkasan_awal?: any) => void;
   onError?: (message: string) => void;
 }
 
@@ -137,7 +147,12 @@ export const streamPost = async (
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // Ensure no double slashes in URL
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const cleanBaseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const url = `${cleanBaseUrl}${cleanEndpoint}`;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
@@ -192,7 +207,7 @@ export const streamPost = async (
             // Handle events based on type
             switch (event.type) {
               case 'status':
-                handlers.onStatus?.(event.message || '', event.progress || 0);
+                handlers.onStatus?.(event.message || '', event.progress || 0, (event as any).section);
                 break;
               
               case 'chunk':
@@ -200,16 +215,56 @@ export const streamPost = async (
                 break;
               
               case 'result':
-                handlers.onResult?.(event.data, event.progress || 0);
+                handlers.onResult?.(event.data, event.progress || 0, event.section);
                 break;
               
               case 'completed':
-                if (event.success && event.data && event.ringkasan_awal) {
-                  handlers.onCompleted?.(event.data, event.ringkasan_awal);
+                // Check if ringkasan_awal is in event directly (event.ringkasan_awal)
+                const ringkasanFromEvent = (event as any).ringkasan_awal;
+                
+                if (event.success && event.data) {
+                  // For project creation, event.data contains { data: {...}, ringkasan_awal: {...} }
+                  // For plan detail, event.data might be different structure
+                  const completedData = event.data;
+                  if (completedData.data && completedData.ringkasan_awal) {
+                    // Project response format
+                    handlers.onCompleted?.(completedData.data, completedData.ringkasan_awal);
+                  } else if (completedData.ringkasan_awal) {
+                    // Only ringkasan_awal provided, use event.data as data
+                    handlers.onCompleted?.(completedData, completedData.ringkasan_awal);
+                  } else if (ringkasanFromEvent) {
+                    // ringkasan_awal is in event property, not in data
+                    handlers.onCompleted?.(completedData, ringkasanFromEvent);
+                  } else {
+                    // Single data object (for plan detail)
+                    handlers.onCompleted?.(completedData);
+                  }
+                } else if (event.data) {
+                  // Handle completed without success flag
+                  const completedData = event.data;
+                  if (completedData.data && completedData.ringkasan_awal) {
+                    handlers.onCompleted?.(completedData.data, completedData.ringkasan_awal);
+                  } else if (ringkasanFromEvent) {
+                    handlers.onCompleted?.(completedData, ringkasanFromEvent);
+                  } else {
+                    handlers.onCompleted?.(completedData);
+                  }
                 } else {
                   handlers.onError?.(event.message || 'Completed dengan error');
                 }
                 return; // Exit after completed
+                break;
+              
+              case 'saved':
+                // Saved event for project creation - data contains both data and ringkasan_awal
+                if (handlers.onCompleted && event.data) {
+                  const savedData = event.data;
+                  if (savedData.data && savedData.ringkasan_awal) {
+                    handlers.onCompleted?.(savedData.data, savedData.ringkasan_awal);
+                  } else {
+                    handlers.onCompleted?.(savedData);
+                  }
+                }
                 break;
               
               case 'error':

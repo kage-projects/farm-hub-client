@@ -35,7 +35,7 @@ type NavItem = {
 export interface NavbarProps {
   logo?: React.ReactNode;
   links?: NavItem[];
-  cta?: { label: string; href: string };
+  cta?: { label: string; href?: string; onClick?: () => void };
   activeHref?: string;
   sticky?: boolean;
   overHero?: boolean;
@@ -72,7 +72,7 @@ const DEFAULT_LINKS: NavItem[] = [
 export const Navbar: React.FC<NavbarProps> = ({
   logo,
   links = DEFAULT_LINKS,
-  cta = { label: "Get Started", href: "/start" },
+  cta = { label: "Get Started", href: "/start", onClick: undefined },
   activeHref,
   sticky = true,
   user = null,
@@ -90,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // All color mode values at top level (no conditional hooks)
   const textColor = useColorModeValue("gray.800", "white");
-  const mutedColor = useColorModeValue("gray.600", "gray.400");
+  const mutedColor = useColorModeValue("gray.600", "gray.300");
   const accentColor = useColorModeValue("brand.600", "brand.400");
   const logoColor = useColorModeValue("gray.900", "white");
   const hoverBgLight = useColorModeValue("blackAlpha.50", "whiteAlpha.100");
@@ -307,17 +307,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             <NotificationBell />
             
-            <ChakraLink href={cta.href} _hover={{ textDecoration: "none" }}>
+            {cta.onClick ? (
               <Button 
                 colorPalette="brand" 
                 size="md"
                 fontWeight={600}
                 px={6}
                 h={10}
+                onClick={cta.onClick}
               >
                 {cta.label}
               </Button>
-            </ChakraLink>
+            ) : (
+              <ChakraLink href={cta.href || '#'} _hover={{ textDecoration: "none" }}>
+                <Button 
+                  colorPalette="brand" 
+                  size="md"
+                  fontWeight={600}
+                  px={6}
+                  h={10}
+                >
+                  {cta.label}
+                </Button>
+              </ChakraLink>
+            )}
           </HStack>
 
           {/* Mobile */}
@@ -424,17 +437,32 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
 
               <Box px={4} pt={4}>
-                <ChakraLink href={cta.href} _hover={{ textDecoration: "none" }} display="block">
+                {cta.onClick ? (
                   <Button 
                     colorPalette="brand" 
                     size="md" 
                     w="full" 
-                    onClick={onClose}
+                    onClick={() => {
+                      onClose();
+                      cta.onClick?.();
+                    }}
                     fontWeight={600}
                   >
                     {cta.label}
                   </Button>
-                </ChakraLink>
+                ) : (
+                  <ChakraLink href={cta.href || '#'} _hover={{ textDecoration: "none" }} display="block">
+                    <Button 
+                      colorPalette="brand" 
+                      size="md" 
+                      w="full" 
+                      onClick={onClose}
+                      fontWeight={600}
+                    >
+                      {cta.label}
+                    </Button>
+                  </ChakraLink>
+                )}
               </Box>
 
               {user && (

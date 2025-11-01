@@ -1,39 +1,98 @@
 import { Container, VStack, HStack, Heading, Text, Box } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Navbar } from '../components/navbar/Navbar';
-import { Button } from '../components/button/Button';
+import { Button as CustomButton } from '../components/button/Button';
 import { Card, CardBody } from '../components/surfaces/Card';
 import { useColorModeValue } from '../components/ui/color-mode';
 import { RFQForm, type RFQFormData } from '../components/rfq/RFQForm';
 import { SupplierRecommender } from '../components/ai/SupplierRecommender';
 import { DealAdvisor } from '../components/ai/DealAdvisor';
-import { FiArrowLeft, FiSend } from 'react-icons/fi';
+import { FiArrowLeft, FiSend, FiInfo } from 'react-icons/fi';
+import { usePurchaseStore } from '../store/purchaseStore';
+import { Breadcrumbs } from '../components/navigation/Breadcrumbs';
+import { Alert } from '../components/feedback/Alert';
 
 /**
  * RFQ Page - Create Request for Quotation
  */
 export function RFQPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { rfqPrefillData, clearRFQPrefillData } = usePurchaseStore();
+  
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
 
-  const [formData, setFormData] = useState<RFQFormData>({
-    itemCategory: '',
-    itemName: '',
-    specification: '',
-    size: '',
-    quantity: 0,
-    unit: '',
-    deliveryDate: '',
-    deliveryAddress: '',
-    minSLA: 0,
-    allowedPriceModels: [],
-    requireEscrow: true,
-    notes: '',
-  });
+  // Get prefill data from location.state or store
+  const statePrefill = (location.state as { prefillData?: any })?.prefillData;
+  const prefillData = statePrefill || rfqPrefillData;
 
+  // Map prefill data to RFQFormData format
+  const getInitialFormData = (): RFQFormData => {
+    if (!prefillData) {
+      return {
+        itemCategory: '',
+        itemName: '',
+        specification: '',
+        size: '',
+        quantity: 0,
+        unit: '',
+        deliveryDate: '',
+        deliveryAddress: '',
+        minSLA: 0,
+        allowedPriceModels: [],
+        requireEscrow: true,
+        notes: '',
+      };
+    }
+
+    // Map category
+    let itemCategory = '';
+    if (prefillData.itemCategory === 'pakan') itemCategory = 'pakan';
+    else if (prefillData.itemCategory === 'benih') itemCategory = 'bibit';
+    else if (prefillData.itemCategory === 'peralatan') itemCategory = 'logistik';
+
+    return {
+      itemCategory: itemCategory || '',
+      itemName: prefillData.itemCategory === 'pakan' ? 'Pakan Ikan' : 
+                prefillData.itemCategory === 'benih' ? 'Benih Ikan' : 
+                'Peralatan Budidaya',
+      specification: prefillData.specification || '',
+      size: '',
+      quantity: prefillData.quantity || 0,
+      unit: prefillData.itemCategory === 'pakan' ? 'kg' : 
+            prefillData.itemCategory === 'benih' ? 'ekor' : 
+            'unit',
+      deliveryDate: prefillData.deliveryDate || '',
+      deliveryAddress: '',
+      minSLA: prefillData.itemCategory === 'benih' ? 72 : 48, // Default SLA based on item type
+      allowedPriceModels: prefillData.spesifikasiKetat || prefillData.nilaiBesar 
+        ? ['fixed', 'indexed'] 
+        : ['spot', 'fixed'],
+      requireEscrow: true,
+      notes: prefillData.jadwalBertahap ? 'Perlu pengiriman bertahap (mingguan)' : '',
+    };
+  };
+
+  const [formData, setFormData] = useState<RFQFormData>(getInitialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form when prefill data changes
+  useEffect(() => {
+    if (prefillData) {
+      const initialData = getInitialFormData();
+      setFormData(initialData);
+    }
+  }, [prefillData]);
+
+  // Clear prefill data after form is submitted or page is left
+  useEffect(() => {
+    return () => {
+      // Clear prefill data when leaving page (only if form was not submitted)
+      // In real app, you might want to clear only on successful submission
+    };
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -73,11 +132,20 @@ export function RFQPage() {
       return;
     }
 
+    // Clear prefill data after successful submission
+    clearRFQPrefillData();
+
     // Simulate RFQ creation - in real app, send to backend
     const rfqId = `rfq-${Date.now()}`;
     localStorage.setItem('current_rfq', JSON.stringify({ id: rfqId, ...formData }));
     navigate(`/rfq/${rfqId}/quotation`);
   };
+
+  const breadcrumbs = [
+    { label: 'Dashboard', href: '/dashboard' },
+    prefillData?.projectId ? { label: 'Plan Detail', href: `/plan-detail/${prefillData.projectId}` } : null,
+    { label: 'Buat RFQ', href: '/rfq' },
+  ].filter(Boolean) as Array<{ label: string; href: string }>;
 
   return (
     <>
@@ -91,16 +159,25 @@ export function RFQPage() {
       />
       <Container maxW="4xl" py={8}>
         <VStack gap={6} align="stretch">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={breadcrumbs} />
+
           {/* Header */}
           <HStack gap={4}>
-            <Button
+            <CustomButton
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/suppliers')}
+              onClick={() => {
+                if (prefillData?.projectId) {
+                  navigate(`/plan-detail/${prefillData.projectId}`);
+                } else {
+                  navigate('/suppliers');
+                }
+              }}
               leftIcon={<FiArrowLeft />}
             >
               Kembali
-            </Button>
+            </CustomButton>
             <VStack align="start" gap={1} flex={1}>
               <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
                 Buat Request for Quotation (RFQ)
@@ -110,6 +187,17 @@ export function RFQPage() {
               </Text>
             </VStack>
           </HStack>
+
+          {/* Prefill Info Alert */}
+          {prefillData && (
+            <Alert
+              status="info"
+              variant="subtle"
+              title="Form sudah diisi otomatis"
+              description="Data dari rekomendasi supplier telah diisi. Anda dapat mengubahnya sesuai kebutuhan."
+              icon={<FiInfo />}
+            />
+          )}
 
           {/* AI Supplier Recommendations */}
           {formData.itemCategory && (
@@ -147,21 +235,21 @@ export function RFQPage() {
 
               {/* Actions */}
               <HStack gap={4} justify="flex-end">
-                <Button
+                <CustomButton
                   type="button"
                   variant="outline"
                   onClick={() => navigate('/suppliers')}
                 >
                   Batal
-                </Button>
-                <Button
+                </CustomButton>
+                <CustomButton
                   type="submit"
                   variant="solid"
                   colorScheme="brand"
                   leftIcon={<FiSend />}
                 >
                   Kirim RFQ
-                </Button>
+                </CustomButton>
               </HStack>
             </VStack>
           </form>

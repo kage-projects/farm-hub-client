@@ -1,9 +1,13 @@
-import { Container, HStack, Box, VStack, Heading, Text } from '@chakra-ui/react';
+import { Container, HStack, Box, VStack, Heading, Text, Button } from '@chakra-ui/react';
 import { Navbar } from '../components/navbar/Navbar';
 import { PlanSidebar } from '../components/navigation/PlanSidebar';
 import { useColorModeValue } from '../components/ui/color-mode';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { usePlanDetail } from '../hooks/usePlanDetail';
+import { PlanProgress } from '../components/plan/PlanProgress';
+import { PlanTechnicalInfo } from '../components/plan/PlanTechnicalInfo';
+import { PlanRoadmapDetail } from '../components/plan/PlanRoadmapDetail';
 import {
   InitialCapitalSimulation,
   MonthlyOperationalCosts,
@@ -13,6 +17,8 @@ import {
   Roadmap,
   SupplierMap,
 } from '../components/plan';
+import { FiRefreshCw } from 'react-icons/fi';
+import { Alert } from '../components/feedback/Alert';
 
 /**
  * Plan Page - Halaman rencana lengkap dengan submenu
@@ -22,9 +28,35 @@ import {
  */
 export function PlanPage() {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
-  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const textSecondary = useColorModeValue('gray.600', 'gray.300');
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [currentHash, setCurrentHash] = useState(location.hash || '#ringkasan');
+  
+  // Get projectId from URL search params or location state
+  const projectId = searchParams.get('projectId') || location.state?.projectId || null;
+  
+  const {
+    isLoading,
+    progress,
+    statusMessage,
+    currentSection,
+    informasiTeknis,
+    roadmap,
+    analisisFinansial,
+    isCompleted,
+    error,
+    startStreaming,
+    reset,
+  } = usePlanDetail();
+
+  // Start streaming when component mounts with projectId
+  useEffect(() => {
+    if (projectId && !isLoading && !isCompleted && !informasiTeknis && !roadmap && !analisisFinansial) {
+      startStreaming(projectId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   useEffect(() => {
     // Listen for hash changes
@@ -85,26 +117,108 @@ export function PlanPage() {
       case '#spesifikasi':
         return (
           <VStack align="stretch" gap={4}>
-            <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
-              Spesifikasi Teknis
-            </Heading>
-            <Text color={textSecondary}>
-              Detail spesifikasi teknis kolam, bibit, pakan, dan peralatan yang digunakan dalam proyek budidaya.
-            </Text>
-            <TechnicalSpecs />
+            <HStack justify="space-between" align="start">
+              <VStack align="start" gap={1}>
+                <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
+                  Spesifikasi Teknis
+                </Heading>
+                <Text color={textSecondary}>
+                  Detail spesifikasi teknis kolam, bibit, pakan, dan peralatan yang digunakan dalam proyek budidaya.
+                </Text>
+              </VStack>
+              {projectId && !isCompleted && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="brand"
+                  onClick={() => {
+                    reset();
+                    startStreaming(projectId);
+                  }}
+                  leftIcon={<FiRefreshCw />}
+                  disabled={isLoading}
+                >
+                  Refresh
+                </Button>
+              )}
+            </HStack>
+            
+            {isLoading && (
+              <PlanProgress 
+                progress={progress} 
+                statusMessage={statusMessage}
+                currentSection={currentSection}
+              />
+            )}
+            
+            {error && (
+              <Alert 
+                status="error" 
+                variant="subtle"
+                title="Error"
+                description={error}
+              />
+            )}
+            
+            {isCompleted && informasiTeknis ? (
+              <PlanTechnicalInfo data={informasiTeknis} />
+            ) : !isLoading && !error ? (
+              <TechnicalSpecs />
+            ) : null}
           </VStack>
         );
       
       case '#roadmap':
         return (
           <VStack align="stretch" gap={4}>
-            <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
-              Tahapan Pelaksanaan
-            </Heading>
-            <Text color={textSecondary}>
-              Roadmap step-by-step pelaksanaan proyek dari persiapan hingga pasca panen.
-            </Text>
-            <Roadmap />
+            <HStack justify="space-between" align="start">
+              <VStack align="start" gap={1}>
+                <Heading fontSize="2xl" fontWeight="bold" color={textPrimary}>
+                  Tahapan Pelaksanaan
+                </Heading>
+                <Text color={textSecondary}>
+                  Roadmap step-by-step pelaksanaan proyek dari persiapan hingga pasca panen.
+                </Text>
+              </VStack>
+              {projectId && !isCompleted && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="brand"
+                  onClick={() => {
+                    reset();
+                    startStreaming(projectId);
+                  }}
+                  leftIcon={<FiRefreshCw />}
+                  disabled={isLoading}
+                >
+                  Refresh
+                </Button>
+              )}
+            </HStack>
+            
+            {isLoading && (
+              <PlanProgress 
+                progress={progress} 
+                statusMessage={statusMessage}
+                currentSection={currentSection}
+              />
+            )}
+            
+            {error && (
+              <Alert 
+                status="error" 
+                variant="subtle"
+                title="Error"
+                description={error}
+              />
+            )}
+            
+            {isCompleted && roadmap ? (
+              <PlanRoadmapDetail data={roadmap} />
+            ) : !isLoading && !error ? (
+              <Roadmap />
+            ) : null}
           </VStack>
         );
       

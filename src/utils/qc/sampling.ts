@@ -52,3 +52,4 @@ export function getSamplingRecommendation(
   return calculateSampling(quantity, rule.minSample, rule.percentage);
 }
 
+

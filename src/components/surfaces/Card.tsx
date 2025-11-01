@@ -25,15 +25,15 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ variant = 'glass', children, ...props }, ref) => {
     const glassBg = useColorModeValue(
       'rgba(255, 255, 255, 0.65)',
-      'rgba(30, 58, 138, 0.4)'
+      'rgba(45, 75, 155, 0.5)'
     );
     const elevatedBg = useColorModeValue(
       'rgba(255, 255, 255, 0.85)',
-      'rgba(30, 58, 138, 0.6)'
+      'rgba(55, 85, 165, 0.75)'
     );
     const borderColor = useColorModeValue(
       'rgba(6, 182, 212, 0.2)',
-      'rgba(34, 211, 238, 0.2)'
+      'rgba(34, 211, 238, 0.35)'
     );
 
     const variantStyles = {
@@ -93,7 +93,7 @@ Card.displayName = 'Card';
  * Card Header component
  */
 export const CardHeader = ({ children, ...props }: React.ComponentProps<typeof Box>) => {
-  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200');
   
   return (
     <Box mb={4} pb={3} borderBottom="1px solid" borderColor={borderColor} {...props}>
@@ -115,7 +115,7 @@ export const CardBody = ({ children, ...props }: React.ComponentProps<typeof VSt
  * Card Footer component
  */
 export const CardFooter = ({ children, ...props }: React.ComponentProps<typeof Box>) => {
-  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.200');
   
   return (
     <Box mt={4} pt={3} borderTop="1px solid" borderColor={borderColor} {...props}>

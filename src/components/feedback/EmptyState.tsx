@@ -26,9 +26,9 @@ export interface EmptyStateProps {
  * - Optional action button
  */
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
-  const iconColor = useColorModeValue('gray.400', 'gray.500');
+  const iconColor = useColorModeValue('gray.400', 'gray.400');
   const titleColor = useColorModeValue('gray.800', 'gray.100');
-  const descColor = useColorModeValue('gray.600', 'gray.400');
+  const descColor = useColorModeValue('gray.600', 'gray.300');
 
   return (
     <VStack gap={4} py={12} textAlign="center" maxW="md" mx="auto">

@@ -1,5 +1,6 @@
-import { Container, VStack, HStack, Heading, Text, SimpleGrid, Box } from '@chakra-ui/react';
+import { Container, VStack, HStack, Heading, Text, SimpleGrid, Box, Alert } from '@chakra-ui/react';
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/navbar/Navbar';
 import { useColorModeValue } from '../components/ui/color-mode';
 import { SupplierCard } from '../components/supplier/SupplierCard';
@@ -7,12 +8,15 @@ import { SupplierFilters, type FilterOption, type SortOption } from '../componen
 import { mockSuppliers } from '../data/mockSuppliers';
 import { calculateAllScores, sortByScore, filterByCategory } from '../utils/supplier/scoring';
 import type { SupplierData } from '../data/mockSuppliers';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiInfo, FiArrowRight } from 'react-icons/fi';
+import { Card, CardBody } from '../components/surfaces/Card';
+import { Button } from '../components/button/Button';
 
 /**
  * Suppliers Page - Directory dengan scoring & badges
  */
 export function SuppliersPage() {
+  const navigate = useNavigate();
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
 
@@ -47,9 +51,22 @@ export function SuppliersPage() {
   }, [categoryFilter, sortBy, scores]);
 
   const handleSelectSupplier = (supplierId: string) => {
-    console.log('Selected supplier:', supplierId);
-    // Navigate to RFQ creation with supplier pre-selected
-    // navigate(`/rfq?supplier=${supplierId}`);
+    // Find supplier data
+    const supplier = filteredSuppliers.find((s) => s.id === supplierId);
+    if (!supplier) return;
+
+    // Navigate to RFQ page with supplier pre-selected
+    navigate('/rfq', {
+      state: {
+        prefillData: {
+          supplierId: supplier.id,
+          itemCategory: supplier.category === 'bibit' ? 'benih' : 
+                       supplier.category === 'pakan' ? 'pakan' : 
+                       'peralatan',
+        },
+        source: 'supplier-page',
+      },
+    });
   };
 
   // Mock distance calculation
@@ -79,6 +96,36 @@ export function SuppliersPage() {
               Temukan supplier terpercaya dengan skor dan badge terverifikasi
             </Text>
           </VStack>
+
+          {/* Info Box: Perbedaan dengan Supplier Recommendation */}
+          <Card variant="elevated">
+            <CardBody>
+              <VStack align="start" gap={3}>
+                <HStack gap={2}>
+                  <FiInfo size={18} color={useColorModeValue('blue.600', 'blue.300')} />
+                  <Heading fontSize="sm" fontWeight="semibold" color={textPrimary}>
+                    Tentang Supplier Directory
+                  </Heading>
+                </HStack>
+                <Text fontSize="sm" color={textSecondary}>
+                  Halaman ini menampilkan <strong>directory umum</strong> semua supplier yang tersedia. 
+                  Gunakan untuk browsing, membandingkan, dan membuat RFQ manual.
+                </Text>
+                <Text fontSize="sm" color={textSecondary}>
+                  <strong>Berbeda dengan Rekomendasi Supplier</strong> yang muncul di halaman Plan Detail. 
+                  Rekomendasi di Plan Detail adalah supplier yang <strong>disesuaikan dengan kebutuhan proyek spesifik</strong> Anda.
+                </Text>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/dashboard')}
+                  rightIcon={<FiArrowRight />}
+                >
+                  Lihat Dashboard untuk melihat rekomendasi kontekstual
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
 
           {/* Filters */}
           <SupplierFilters

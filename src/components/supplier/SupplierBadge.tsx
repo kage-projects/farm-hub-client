@@ -42,3 +42,4 @@ export function SupplierBadge({ type, showTooltip = true }: SupplierBadgeProps) 
   return badge;
 }
 
+

@@ -1,4 +1,4 @@
-import { HStack, VStack, Badge, Text, Heading, IconButton } from '@chakra-ui/react';
+import { HStack, VStack, Badge, Text, Heading, IconButton, Box } from '@chakra-ui/react';
 import { Card, CardHeader, CardBody, CardFooter } from '../surfaces/Card';
 import { Button } from '../button/Button';
 import { useColorModeValue } from '../ui/color-mode';
@@ -34,7 +34,8 @@ export function ProjectCard({
   onDelete,
 }: ProjectCardProps) {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
-  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const textSecondary = useColorModeValue('gray.600', 'gray.300');
+  const iconColor = useColorModeValue('gray.600', 'gray.300');
 
   const statusConfig = {
     draft: { label: 'Draft', color: 'gray' as const },
@@ -85,6 +86,11 @@ export function ProjectCard({
               variant="ghost"
               size="sm"
               onClick={() => onView(id)}
+              color={iconColor}
+              _hover={{
+                bg: useColorModeValue('gray.100', 'whiteAlpha.200'),
+                color: useColorModeValue('gray.700', 'white'),
+              }}
             >
               <FiEye />
             </IconButton>
@@ -95,6 +101,11 @@ export function ProjectCard({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(id)}
+              color={iconColor}
+              _hover={{
+                bg: useColorModeValue('gray.100', 'whiteAlpha.200'),
+                color: useColorModeValue('gray.700', 'white'),
+              }}
             >
               <FiEdit2 />
             </IconButton>
@@ -106,6 +117,10 @@ export function ProjectCard({
               size="sm"
               colorPalette="red"
               onClick={() => onDelete(id)}
+              _hover={{
+                bg: useColorModeValue('red.50', 'red.900'),
+                color: useColorModeValue('red.600', 'red.300'),
+              }}
             >
               <FiTrash2 />
             </IconButton>

@@ -3,7 +3,7 @@
  * Handles all project-related API calls
  */
 
-import { post, get, patch, streamPost, type SSEStreamHandler } from '../../../services/apiService';
+import { post, get, patch, deleteRequest, streamPost, type SSEStreamHandler } from '../../../services/apiService';
 
 export interface CreateProjectRequest {
   jenis_ikan: 'NILA' | 'LELE' | 'GURAME';
@@ -136,6 +136,13 @@ export const updateProject = async (
     throw new Error('Response data tidak ditemukan');
   }
   return result;
+};
+
+/**
+ * Delete project by ID
+ */
+export const deleteProject = async (projectId: string): Promise<void> => {
+  await deleteRequest(`/projects/${projectId}`);
 };
 
 /**

@@ -2,7 +2,7 @@
  * Auth Page - Main authentication page with login/register tabs
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container, VStack, HStack, Heading, Text } from '@chakra-ui/react';
 import { Tabs } from '@chakra-ui/react';
@@ -22,6 +22,12 @@ export function AuthPage() {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
 
+  // Update tab index when URL changes (e.g., from link clicks)
+  useEffect(() => {
+    const newTabIndex = location.pathname === '/register' ? 1 : 0;
+    setTabIndex(newTabIndex);
+  }, [location.pathname]);
+
   const handleTabChange = (index: number) => {
     setTabIndex(index);
     // Update URL without navigation
@@ -30,13 +36,21 @@ export function AuthPage() {
   };
 
   return (
-    <Container maxW="md" py={20}>
-      <VStack gap={8}>
-        <HStack w="full" justify="flex-start" align="center">
+    <Container 
+      maxW="md" 
+      minH="100vh"
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      py={8}
+      px={4}
+    >
+      <VStack gap={6} w="full">
+        <HStack w="full" justify="flex-start" align="center" mb={-2}>
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            size="md"
+            size="sm"
             leftIcon={<FiArrowLeft />}
             colorScheme="brand"
             _hover={{
@@ -49,11 +63,11 @@ export function AuthPage() {
           </Button>
         </HStack>
 
-        <VStack gap={2} textAlign="center">
-          <Heading size="2xl" color={textPrimary}>
+        <VStack gap={2} textAlign="center" mb={2}>
+          <Heading size="xl" color={textPrimary}>
             {tabIndex === 0 ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
           </Heading>
-          <Text fontSize="md" color={textSecondary}>
+          <Text fontSize="sm" color={textSecondary}>
             {tabIndex === 0
               ? 'Masukkan kredensial Anda untuk melanjutkan'
               : 'Daftar sekarang dan mulai analisis proyek Anda'}
@@ -67,14 +81,14 @@ export function AuthPage() {
           colorScheme="brand"
         >
           <Tabs.List>
-            <Tabs.Trigger value="0" flex={1}>Masuk</Tabs.Trigger>
-            <Tabs.Trigger value="1" flex={1}>Daftar</Tabs.Trigger>
+            <Tabs.Trigger value="0" flex={1} textAlign="center">Masuk</Tabs.Trigger>
+            <Tabs.Trigger value="1" flex={1} textAlign="center">Daftar</Tabs.Trigger>
           </Tabs.List>
 
-          <Tabs.Content value="0" px={0} pt={6}>
+          <Tabs.Content value="0" px={0} pt={4}>
             <LoginForm />
           </Tabs.Content>
-          <Tabs.Content value="1" px={0} pt={6}>
+          <Tabs.Content value="1" px={0} pt={4}>
             <RegisterForm />
           </Tabs.Content>
         </Tabs.Root>

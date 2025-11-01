@@ -66,7 +66,7 @@ export const Alert = ({
   const getVariantStyles = () => {
     const glassBg = useColorModeValue(
       `rgba(255, 255, 255, 0.7)`,
-      `rgba(30, 58, 138, 0.5)`
+      `rgba(55, 85, 165, 0.65)`
     );
     const solidBg = useColorModeValue(`${color}.600`, `${color}.500`);
     const textColor = useColorModeValue(`${color}.900`, `${color}.100`);

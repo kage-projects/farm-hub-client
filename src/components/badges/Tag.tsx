@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import { forwardRef } from 'react';
+import { useColorModeValue } from '../ui/color-mode';
 
 /**
  * Tag/Badge variants
@@ -66,14 +67,14 @@ export const Tag = forwardRef<HTMLDivElement, TagProps>(
           };
         case 'subtle':
           return {
-            bg: `${actualColor}.50`,
-            color: `${actualColor}.700`,
+            bg: useColorModeValue(`${actualColor}.50`, `${actualColor}.900`),
+            color: useColorModeValue(`${actualColor}.700`, `${actualColor}.200`),
           };
         case 'outline':
           return {
-            color: `${actualColor}.700`,
+            color: useColorModeValue(`${actualColor}.700`, `${actualColor}.300`),
             border: '1px solid',
-            borderColor: `${actualColor}.600`,
+            borderColor: useColorModeValue(`${actualColor}.600`, `${actualColor}.500`),
             bg: 'transparent',
           };
         default:

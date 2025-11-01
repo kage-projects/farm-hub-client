@@ -29,7 +29,8 @@ export function StatCard({
   size = 'md',
 }: StatCardProps) {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
-  const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const textSecondary = useColorModeValue('gray.600', 'gray.300');
+  const iconColor = useColorModeValue('gray.600', 'gray.300');
   
   // Determine trend color
   const getTrendColor = () => {
@@ -56,7 +57,11 @@ export function StatCard({
           <Text fontSize="sm" color={textSecondary} fontWeight="medium">
             {label}
           </Text>
-          {icon && <Box fontSize="xl">{icon}</Box>}
+          {icon && (
+            <Box fontSize="xl" color={iconColor}>
+              {icon}
+            </Box>
+          )}
         </HStack>
         <Heading 
           fontSize={size === 'sm' ? 'lg' : size === 'lg' ? '2xl' : 'xl'} 

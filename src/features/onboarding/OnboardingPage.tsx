@@ -23,8 +23,12 @@ export interface OnboardingFormData extends LocationFormData, ProjectDetailsForm
  */
 export function OnboardingPage() {
   const navigate = useNavigate();
+  // All hooks must be called at top level
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const gray200 = useColorModeValue('gray.200', 'gray.700');
+  const gray50 = useColorModeValue('gray.50', 'gray.900');
+  const gray900 = useColorModeValue('gray.900', 'gray.900');
 
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -125,6 +129,10 @@ export function OnboardingPage() {
         ...(formData.lat !== undefined && { lat: formData.lat }),
       };
 
+      // Store ringkasan_awal from result events
+      let storedRingkasanAwal: any = null;
+      let storedProjectData: any = null;
+
       await createProjectStream(projectData, {
         onStatus: (message, progress) => {
           setStreamMessage(message);
@@ -134,23 +142,90 @@ export function OnboardingPage() {
           setStreamChunks((prev) => [...prev, text]);
           setStreamProgress(progress);
         },
-        onResult: (_data, progress) => {
+        onResult: (resultData, progress, section) => {
           setStreamProgress(progress);
+          // Store ringkasan_awal if it comes in result events
+          if (section === 'ringkasan_awal' || (resultData && resultData.ringkasan_awal)) {
+            storedRingkasanAwal = resultData.ringkasan_awal || resultData;
+            console.log('Stored ringkasan_awal from result event:', storedRingkasanAwal);
+          }
+          // Store project data if it comes in result events
+          if (section === 'project' || (resultData && resultData.id && !resultData.ringkasan_awal)) {
+            storedProjectData = resultData;
+            console.log('Stored project data from result event:', storedProjectData);
+          }
         },
         onCompleted: (data, ringkasan_awal) => {
           setStreamProgress(100);
           setStreamMessage('Analisis selesai!');
           
+          // Debug: Log received data
+          console.log('OnboardingPage - onCompleted called');
+          console.log('Received data:', data);
+          console.log('Received ringkasan_awal parameter:', ringkasan_awal);
+          console.log('Stored ringkasan_awal from result events:', storedRingkasanAwal);
+          console.log('Stored project data from result events:', storedProjectData);
+          
+          // Use ringkasan_awal from parameter, or from stored result, or try to extract from data
+          let finalRingkasanAwal = ringkasan_awal || storedRingkasanAwal;
+          let finalData = data || storedProjectData;
+          
+          // Try to extract from data if it's a combined object
+          if (finalData && !finalRingkasanAwal && finalData.ringkasan_awal) {
+            finalRingkasanAwal = finalData.ringkasan_awal;
+            // Extract just the project data part
+            if (finalData.data) {
+              finalData = finalData.data;
+            }
+          }
+          
+          // If data is an object with nested structure, try to extract
+          if (finalData && typeof finalData === 'object') {
+            // Check if it's { data: {...}, ringkasan_awal: {...} }
+            if (finalData.data && finalData.ringkasan_awal) {
+              finalRingkasanAwal = finalData.ringkasan_awal;
+              finalData = finalData.data;
+            }
+          }
+          
+          console.log('Final data after processing:', finalData);
+          console.log('Final ringkasan_awal after processing:', finalRingkasanAwal);
+          
+          // Validate data before building response
+          if (!finalData || (!finalData.id && !finalData.project_id)) {
+            console.error('Data tidak valid atau tidak memiliki ID:', finalData);
+            setError('Data proyek tidak valid. Silakan coba lagi atau hubungi support.');
+            setIsStreaming(false);
+            return;
+          }
+          
+          if (!finalRingkasanAwal) {
+            console.error('Ringkasan awal tidak ditemukan setelah semua upaya parsing');
+            console.error('Available data keys:', finalData ? Object.keys(finalData) : 'no data');
+            // Don't block navigation, but log warning - might be able to fetch later
+            console.warn('Continuing without ringkasan_awal - will try to fetch from API');
+          }
+          
           // Build response object matching ProjectResponse format
           const response: ProjectResponse = {
             success: true,
             message: 'Project berhasil dibuat dan dianalisis',
-            data,
-            ringkasan_awal,
+            data: finalData,
+            ringkasan_awal: finalRingkasanAwal || {
+              skor_kelayakan: 0,
+              potensi_pasar: 'Belum dianalisis',
+              estimasi_modal: finalData?.modal || 0,
+              estimasi_balik_modal: 0,
+              kesimpulan_ringkasan: 'Data sedang diproses, silakan refresh halaman nanti.',
+            },
           };
           
+          console.log('Built response object:', response);
+          const projectId = finalData.id || finalData.project_id;
+          console.log('Navigating to:', `/onboarding/result/${projectId}`);
+          
           // Navigate to project result page with response data
-          navigate(`/onboarding/result/${data.id}`, { 
+          navigate(`/onboarding/result/${projectId}`, { 
             state: { projectResult: response } 
           });
         },
@@ -278,7 +353,7 @@ export function OnboardingPage() {
             <Box
               w="full"
               h="2"
-              bg={useColorModeValue('gray.200', 'gray.700')}
+              bg={gray200}
               borderRadius="full"
               overflow="hidden"
             >
@@ -317,7 +392,7 @@ export function OnboardingPage() {
                     <Box
                       w="full"
                       h="2"
-                      bg={useColorModeValue('gray.200', 'gray.700')}
+                      bg={gray200}
                       borderRadius="full"
                       overflow="hidden"
                     >
@@ -337,10 +412,10 @@ export function OnboardingPage() {
                       maxH="200px"
                       overflowY="auto"
                       p={3}
-                      bg={useColorModeValue('gray.50', 'gray.900')}
+                      bg={gray50}
                       borderRadius="md"
                       border="1px solid"
-                      borderColor={useColorModeValue('gray.200', 'gray.700')}
+                      borderColor={gray200}
                     >
                       <Code 
                         fontSize="xs" 

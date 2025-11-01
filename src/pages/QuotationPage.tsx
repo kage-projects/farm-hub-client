@@ -8,20 +8,26 @@ import { QuotationCard } from '../components/rfq/QuotationCard';
 import { QuotationComparison } from '../components/rfq/QuotationComparison';
 import { mockQuotations } from '../data/mockQuotations';
 import type { Quotation } from '../data/mockQuotations';
-import { FiArrowLeft, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiFileText, FiCheck } from 'react-icons/fi';
 
 /**
  * Quotation Page - View & compare quotations
  */
 export function QuotationPage() {
+  // All hooks must be called before conditional returns
   const navigate = useNavigate();
   const { id: rfqId } = useParams<{ id: string }>();
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  const brand600 = useColorModeValue('brand.600', 'brand.400');
+  const blue50 = useColorModeValue('blue.50', 'blue.900');
+  const blue200 = useColorModeValue('blue.200', 'blue.700');
+  const blue700 = useColorModeValue('blue.700', 'blue.300');
 
   const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const [selectedQuotation, setSelectedQuotation] = useState<string | null>(null);
+  const [selectedQuotations, setSelectedQuotations] = useState<string[]>([]); // Multi-select
   const [showComparison, setShowComparison] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'single' | 'multi'>('multi'); // Default multi-select
 
   useEffect(() => {
     // Load quotations for this RFQ
@@ -30,8 +36,20 @@ export function QuotationPage() {
   }, [rfqId]);
 
   const handleSelect = (quotationId: string) => {
-    setSelectedQuotation(quotationId);
-    setShowComparison(false);
+    if (selectionMode === 'single') {
+      // Single select mode (legacy)
+      setSelectedQuotations([quotationId]);
+      setShowComparison(false);
+    } else {
+      // Multi-select mode
+      setSelectedQuotations((prev) => {
+        if (prev.includes(quotationId)) {
+          return prev.filter((id) => id !== quotationId);
+        } else {
+          return [...prev, quotationId];
+        }
+      });
+    }
   };
 
   const handlePriceLock = (quotationId: string) => {
@@ -39,12 +57,27 @@ export function QuotationPage() {
     setQuotations((prev) =>
       prev.map((q) => (q.id === quotationId ? { ...q, priceLocked: true } : q))
     );
-    setSelectedQuotation(quotationId);
+    // Add to selection if not already selected
+    if (!selectedQuotations.includes(quotationId)) {
+      setSelectedQuotations((prev) => [...prev, quotationId]);
+    }
+  };
+
+  const handleContinueToReview = () => {
+    if (selectedQuotations.length > 0) {
+      navigate(`/rfq/${rfqId}/quotation/review`, {
+        state: {
+          selectedQuotationIds: selectedQuotations,
+          quotations: quotations.filter((q) => selectedQuotations.includes(q.id)),
+        },
+      });
+    }
   };
 
   const handleContinueToContract = () => {
-    if (selectedQuotation) {
-      navigate(`/contract/${selectedQuotation}`);
+    // Legacy: single select to contract
+    if (selectedQuotations.length === 1) {
+      navigate(`/contract/${selectedQuotations[0]}`);
     }
   };
 
@@ -102,23 +135,53 @@ export function QuotationPage() {
               </Heading>
               <Text fontSize="md" color={textSecondary}>
                 {quotations.length} penawaran diterima untuk RFQ Anda
+                {selectedQuotations.length > 0 && (
+                  <Text as="span" fontWeight="semibold" color={brand600}>
+                    {' '}• {selectedQuotations.length} dipilih
+                  </Text>
+                )}
               </Text>
             </VStack>
-            {quotations.length > 1 && (
+            <HStack gap={2}>
+              {quotations.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowComparison(!showComparison)}
+                  leftIcon={<FiFileText />}
+                >
+                  {showComparison ? 'Sembunyikan' : 'Bandingkan'} Penawaran
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant={selectionMode === 'multi' ? 'solid' : 'outline'}
                 size="sm"
-                onClick={() => setShowComparison(!showComparison)}
-                leftIcon={<FiFileText />}
+                colorScheme="brand"
+                onClick={() => setSelectionMode(selectionMode === 'multi' ? 'single' : 'multi')}
               >
-                {showComparison ? 'Sembunyikan' : 'Bandingkan'} Penawaran
+                {selectionMode === 'multi' ? 'Multi-Select' : 'Single Select'}
               </Button>
-            )}
+            </HStack>
           </HStack>
 
           {/* Comparison View */}
           {showComparison && quotations.length > 1 && (
             <QuotationComparison quotations={quotations} onSelect={handleSelect} />
+          )}
+
+          {/* Info Box for Multi-Select */}
+          {selectionMode === 'multi' && (
+            <Box
+              p={3}
+              borderRadius="lg"
+              bg={blue50}
+              border="1px solid"
+              borderColor={blue200}
+            >
+              <Text fontSize="sm" color={blue700}>
+                💡 <strong>Mode Multi-Select:</strong> Pilih beberapa supplier untuk membandingkan atau membeli dari beberapa sumber sekaligus. Setelah memilih, klik "Review Pilihan" untuk melanjutkan.
+              </Text>
+            </Box>
           )}
 
           {/* Individual Cards */}
@@ -128,25 +191,37 @@ export function QuotationPage() {
                 <QuotationCard
                   key={quotation.id}
                   quotation={quotation}
-                  isSelected={selectedQuotation === quotation.id}
+                  isSelected={selectedQuotations.includes(quotation.id)}
                   onSelect={handleSelect}
                   onPriceLock={handlePriceLock}
+                  selectionMode={selectionMode}
                 />
               ))}
             </SimpleGrid>
           )}
 
           {/* Continue Button */}
-          {selectedQuotation && (
-            <HStack justify="flex-end">
-              <Button
-                variant="solid"
-                colorScheme="brand"
-                size="lg"
-                onClick={handleContinueToContract}
-              >
-                Lanjutkan ke Kontrak
-              </Button>
+          {selectedQuotations.length > 0 && (
+            <HStack justify="flex-end" gap={3}>
+              {selectionMode === 'multi' && selectedQuotations.length > 1 ? (
+                <Button
+                  variant="solid"
+                  colorScheme="brand"
+                  size="lg"
+                  onClick={handleContinueToReview}
+                >
+                  Review Pilihan ({selectedQuotations.length} supplier)
+                </Button>
+              ) : selectedQuotations.length === 1 ? (
+                <Button
+                  variant="solid"
+                  colorScheme="brand"
+                  size="lg"
+                  onClick={handleContinueToContract}
+                >
+                  Lanjutkan ke Kontrak
+                </Button>
+              ) : null}
             </HStack>
           )}
         </VStack>

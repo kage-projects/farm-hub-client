@@ -140,3 +140,4 @@ export function calculateVolatility30d(priceHistory: number[]): number {
   return Math.min(1, avgChange * 10); // normalize to 0-1 range
 }
 
+

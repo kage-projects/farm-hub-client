@@ -1,6 +1,7 @@
 import { VStack, HStack, Text, Box, Badge, SimpleGrid } from '@chakra-ui/react';
 import { Card, CardBody, CardHeader, CardFooter } from '../surfaces/Card';
 import { Button } from '../button/Button';
+import { Checkbox } from '../forms/Checkbox';
 import { useColorModeValue } from '../ui/color-mode';
 import { PriceLockTimer } from './PriceLockTimer';
 import { formatPriceModel, getRemainingValidityHours, isPriceModelValid } from '../../utils/rfq/priceModel';
@@ -12,6 +13,7 @@ export interface QuotationCardProps {
   isSelected?: boolean;
   onSelect?: (quotationId: string) => void;
   onPriceLock?: (quotationId: string) => void;
+  selectionMode?: 'single' | 'multi';
 }
 
 /**
@@ -21,11 +23,17 @@ export interface QuotationCardProps {
  * - Price-lock timer
  * - Select action
  */
-export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: QuotationCardProps) {
+export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock, selectionMode = 'single' }: QuotationCardProps) {
+  // All hooks must be called at top level
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const selectedBorderColor = useColorModeValue('brand.500', 'brand.400');
+  const selectedBg = useColorModeValue('brand.50', 'brand.900');
+  const grayBg = useColorModeValue('gray.50', 'gray.800');
+  const orangeBg = useColorModeValue('orange.50', 'orange.900');
+  const orangeBorder = useColorModeValue('orange.200', 'orange.700');
+  const brand600 = useColorModeValue('brand.600', 'brand.400');
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -38,24 +46,48 @@ export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: 
   const isValid = isPriceModelValid(quotation.priceModel);
   const remainingHours = getRemainingValidityHours(quotation.priceModel);
 
+  const handleCardClick = () => {
+    if (selectionMode === 'multi') {
+      onSelect?.(quotation.id);
+    }
+  };
+
   return (
     <Card
       variant="elevated"
       border={isSelected ? '2px solid' : '1px solid'}
       borderColor={isSelected ? selectedBorderColor : borderColor}
-      bg={isSelected ? useColorModeValue('brand.50', 'brand.900') : undefined}
+      bg={isSelected ? selectedBg : undefined}
+      cursor={selectionMode === 'multi' ? 'pointer' : undefined}
+      onClick={selectionMode === 'multi' ? handleCardClick : undefined}
+      _hover={selectionMode === 'multi' ? { transform: 'translateY(-2px)' } : undefined}
+      transition="all 0.2s"
     >
       <CardHeader>
         <VStack align="stretch" gap={3}>
           <HStack justify="space-between" align="start">
-            <VStack align="start" gap={1} flex={1}>
-              <Text fontSize="md" fontWeight="semibold" color={textPrimary}>
-                {quotation.supplierName}
-              </Text>
-              <Text fontSize="xs" color={textSecondary}>
-                {quotation.item.name} - {quotation.item.specification || 'Standard'}
-              </Text>
-            </VStack>
+            <HStack gap={3} flex={1}>
+              {selectionMode === 'multi' && (
+                <Box onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onSelect?.(quotation.id);
+                    }}
+                    colorScheme="brand"
+                  />
+                </Box>
+              )}
+              <VStack align="start" gap={1} flex={1}>
+                <Text fontSize="md" fontWeight="semibold" color={textPrimary}>
+                  {quotation.supplierName}
+                </Text>
+                <Text fontSize="xs" color={textSecondary}>
+                  {quotation.item.name} - {quotation.item.specification || 'Standard'}
+                </Text>
+              </VStack>
+            </HStack>
             {isSelected && (
               <Badge colorScheme="brand" variant="solid">
                 <HStack gap={1}>
@@ -105,7 +137,7 @@ export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: 
               <Text fontSize="xs" color={textSecondary} mb={1}>
                 Total Harga
               </Text>
-              <Text fontSize="lg" fontWeight="bold" color="brand.600">
+              <Text fontSize="lg" fontWeight="bold" color={brand600}>
                 {formatCurrency(quotation.totalPrice)}
               </Text>
             </Box>
@@ -117,7 +149,7 @@ export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: 
             borderRadius="md"
             border="1px solid"
             borderColor={borderColor}
-            bg={useColorModeValue('gray.50', 'gray.800')}
+            bg={grayBg}
           >
             <Text fontSize="xs" color={textSecondary} mb={1}>
               Estimasi Pengiriman
@@ -149,9 +181,9 @@ export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: 
             <Box
               p={2}
               borderRadius="md"
-              bg={useColorModeValue('orange.50', 'orange.900')}
+              bg={orangeBg}
               border="1px solid"
-              borderColor={useColorModeValue('orange.200', 'orange.700')}
+              borderColor={orangeBorder}
             >
               <Text fontSize="xs" fontWeight="semibold" color="orange.700" mb={1}>
                 Price-Lock Timer
@@ -163,42 +195,60 @@ export function QuotationCard({ quotation, isSelected, onSelect, onPriceLock }: 
       </CardBody>
 
       <CardFooter>
-        <HStack gap={2} w="full">
-          {!isSelected ? (
-            <>
+        {selectionMode === 'multi' ? (
+          <HStack gap={2} w="full">
+            <Button
+              variant="outline"
+              colorScheme="brand"
+              size="sm"
+              flex={1}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPriceLock?.(quotation.id);
+              }}
+              disabled={!isValid || remainingHours < 1}
+            >
+              Price-Lock
+            </Button>
+          </HStack>
+        ) : (
+          <HStack gap={2} w="full">
+            {!isSelected ? (
+              <>
+                <Button
+                  variant="outline"
+                  colorScheme="brand"
+                  size="sm"
+                  flex={1}
+                  onClick={() => onSelect?.(quotation.id)}
+                  disabled={!isValid}
+                >
+                  Pilih Penawaran
+                </Button>
+                <Button
+                  variant="solid"
+                  colorScheme="brand"
+                  size="sm"
+                  flex={1}
+                  onClick={() => onPriceLock?.(quotation.id)}
+                  disabled={!isValid || remainingHours < 1}
+                >
+                  Price-Lock
+                </Button>
+              </>
+            ) : (
               <Button
-                variant="outline"
-                colorScheme="brand"
+                variant="solid"
+                colorScheme="accent"
                 size="sm"
                 flex={1}
                 onClick={() => onSelect?.(quotation.id)}
-                disabled={!isValid}
               >
-                Pilih Penawaran
+                Lanjutkan ke Kontrak
               </Button>
-              <Button
-                variant="solid"
-                colorScheme="brand"
-                size="sm"
-                flex={1}
-                onClick={() => onPriceLock?.(quotation.id)}
-                disabled={!isValid || remainingHours < 1}
-              >
-                Price-Lock
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="solid"
-              colorScheme="accent"
-              size="sm"
-              flex={1}
-              onClick={() => onSelect?.(quotation.id)}
-            >
-              Lanjutkan ke Kontrak
-            </Button>
-          )}
-        </HStack>
+            )}
+          </HStack>
+        )}
       </CardFooter>
     </Card>
   );

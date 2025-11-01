@@ -20,6 +20,7 @@ declare global {
         event: {
           addListener: (instance: any, eventName: string, handler: (e: any) => void) => void;
         };
+        places?: any; // Places library (optional, loaded via libraries parameter)
       };
     };
   }
@@ -49,25 +50,105 @@ export function GoogleMapPicker({
   const center = centerCity || (lat && lng ? { lat, lng } : defaultCenter);
 
   useEffect(() => {
-    // Load Google Maps API
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      script.onerror = () => {
-        console.error('Failed to load Google Maps API');
-        setMapLoaded(true); // Set to true anyway to show fallback
-      };
-      document.head.appendChild(script);
-    } else {
+    // Helper function to check if Google Maps is fully loaded
+    const isGoogleMapsReady = () => {
+      return !!(window.google?.maps?.Map && window.google?.maps?.Marker && window.google?.maps?.event);
+    };
+
+    // Check if Google Maps API is already loaded and ready
+    if (isGoogleMapsReady()) {
       setMapLoaded(true);
+      return;
     }
+
+    let checkReadyInterval: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
+      if (checkReadyInterval) {
+        clearInterval(checkReadyInterval);
+        checkReadyInterval = null;
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
+    // Check if script is already being loaded
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      // If script exists but Google Maps not ready yet, wait for it
+      if (!isGoogleMapsReady()) {
+        // Wait for existing script to load
+        checkReadyInterval = setInterval(() => {
+          if (isGoogleMapsReady()) {
+            cleanup();
+            setMapLoaded(true);
+          }
+        }, 100);
+
+        // Timeout after 10 seconds
+        timeoutId = setTimeout(() => {
+          cleanup();
+          if (!isGoogleMapsReady()) {
+            console.error('Google Maps API loading timeout');
+          }
+          setMapLoaded(true); // Show fallback anyway
+        }, 10000);
+
+        existingScript.addEventListener('error', () => {
+          cleanup();
+          console.error('Failed to load Google Maps API');
+          setMapLoaded(true);
+        });
+      } else {
+        setMapLoaded(true);
+      }
+      return cleanup;
+    }
+
+    // Load Google Maps API only if not already loaded
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.id = 'google-maps-script'; // Add ID to identify this script
+    
+    script.onload = () => {
+      // Wait a bit for all libraries to initialize
+      checkReadyInterval = setInterval(() => {
+        if (isGoogleMapsReady()) {
+          cleanup();
+          setMapLoaded(true);
+        }
+      }, 100);
+
+      // Timeout after 10 seconds
+      timeoutId = setTimeout(() => {
+        cleanup();
+        if (!isGoogleMapsReady()) {
+          console.error('Google Maps API loaded but not fully initialized');
+        }
+        setMapLoaded(true); // Show map anyway, fallback will handle if not ready
+      }, 10000);
+    };
+    
+    script.onerror = () => {
+      cleanup();
+      console.error('Failed to load Google Maps API');
+      setMapLoaded(true); // Set to true anyway to show fallback
+    };
+    
+    document.head.appendChild(script);
+
+    // Cleanup function
+    return cleanup;
   }, []);
 
   useEffect(() => {
-    if (!mapLoaded || !window.google?.maps || !mapRef.current) return;
+    // Ensure Google Maps is fully ready before initializing
+    if (!mapLoaded || !window.google?.maps?.Map || !window.google?.maps?.Marker || !mapRef.current) return;
 
     // Initialize map
     if (!mapInstanceRef.current) {

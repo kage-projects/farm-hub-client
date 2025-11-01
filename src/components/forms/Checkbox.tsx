@@ -58,7 +58,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           display="inline-flex"
           alignItems="center"
           css={{
-            'input[type="checkbox"]:focus-visible ~ span': {
+            'input[type="checkbox"]:focusVisible ~ span': {
               boxShadow: `0 0 0 3px ${ringColor}`,
               outline: 'none',
             },

@@ -7,6 +7,7 @@ import { useColorModeValue } from '../components/ui/color-mode';
 import { QCForm, type QCFormData } from '../components/qc/QCForm';
 import { Card, CardBody, CardHeader } from '../components/surfaces/Card';
 import { FiArrowLeft, FiClock } from 'react-icons/fi';
+import { usePurchaseStore } from '../store/purchaseStore';
 
 /**
  * QC Page - Quality Check form
@@ -14,8 +15,11 @@ import { FiArrowLeft, FiClock } from 'react-icons/fi';
 export function QCPage() {
   const navigate = useNavigate();
   const { orderId } = useParams<{ orderId: string }>();
+  const { getOrder, updateOrderStatus } = usePurchaseStore();
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
+  
+  const order = orderId ? getOrder(orderId) : undefined;
 
   const [qcData, setQcData] = useState<QCFormData>({
     itemType: 'bibit',
@@ -52,13 +56,22 @@ export function QCPage() {
   }, []);
 
   const handleSubmit = (result: { pass: boolean; penalty?: number }) => {
+    if (orderId) {
+      updateOrderStatus(orderId, 'completed');
+    }
+    
     if (result.pass) {
       alert('QC PASS - Pembayaran akan diteruskan ke supplier');
     } else {
       alert(`QC FAIL/PARTIAL - Penalti Rp ${result.penalty?.toLocaleString('id-ID')} diterapkan`);
     }
-    // Navigate to order details or dashboard
-    navigate('/dashboard');
+    
+    // Navigate to order tracking (will show roadmap button if completed)
+    if (orderId) {
+      navigate(`/order/${orderId}`);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const getRemainingTime = (): string => {
