@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { LandingPage } from '../pages/LandingPage';
-import { LoginPage } from '../pages/LoginPage';
-import { RegisterPage } from '../pages/RegisterPage';
+import { AuthPage } from '../features/auth/AuthPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { InputPage } from '../pages/InputPage';
 import { OnboardingPage } from '../pages/OnboardingPage';
@@ -40,11 +39,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <AuthPage />,
   },
   {
     path: '/register',
-    element: <RegisterPage />,
+    element: <AuthPage />,
   },
   {
     path: '/dashboard',
