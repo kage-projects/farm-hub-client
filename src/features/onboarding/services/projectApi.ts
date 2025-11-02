@@ -3,7 +3,7 @@
  * Handles all project-related API calls
  */
 
-import { post, get, patch } from '../../../services/apiService';
+import { post, get, patch, streamPost, type SSEStreamHandler } from '../../../services/apiService';
 
 export interface CreateProjectRequest {
   jenis_ikan: 'NILA' | 'LELE' | 'GURAME';
@@ -58,7 +58,18 @@ export interface ProjectResponse {
 export type CreateProjectResponse = ProjectResponse;
 
 /**
- * Create a new project
+ * Create a new project with streaming response (SSE)
+ */
+export const createProjectStream = async (
+  data: CreateProjectRequest,
+  handlers: SSEStreamHandler
+): Promise<void> => {
+  await streamPost('projects/stream', data, handlers);
+};
+
+/**
+ * Create a new project (non-streaming, deprecated)
+ * @deprecated Use createProjectStream instead
  */
 export const createProject = async (
   data: CreateProjectRequest

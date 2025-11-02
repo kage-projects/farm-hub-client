@@ -13,6 +13,7 @@ import { LocationStep } from './components/LocationStep';
 import { ProjectDetailsStep } from './components/ProjectDetailsStep';
 import { RiskLevelStep } from './components/RiskLevelStep';
 import { getProject, updateProject, type ProjectResponse, type CreateProjectRequest } from './services/projectApi';
+import { SupplierMap } from '../../components/plan/SupplierMap';
 
 /**
  * Project Result Page - Menampilkan hasil analisis proyek
@@ -534,6 +535,28 @@ export function ProjectResultPage() {
               </CardBody>
             </Card>
           </SimpleGrid>
+
+          {/* Supplier Map */}
+          <Card variant="elevated">
+            <CardHeader>
+              <HStack gap={2}>
+                <FiMapPin size={18} color={iconColor} />
+                <Heading fontSize="lg" fontWeight="semibold" color={textPrimary}>
+                  Peta Lokasi Supplier
+                </Heading>
+              </HStack>
+            </CardHeader>
+            <CardBody>
+              <SupplierMap
+                jenisIkan={data.jenis_ikan}
+                kota={data.kabupaten_id}
+                centerLocation={data.lat && data.lang 
+                  ? { lat: data.lat, lng: data.lang }
+                  : undefined
+                }
+              />
+            </CardBody>
+          </Card>
 
           {/* Action Buttons - Simplified */}
           <Card variant="elevated">

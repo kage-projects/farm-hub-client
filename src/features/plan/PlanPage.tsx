@@ -1,8 +1,8 @@
 import { Container, HStack, Box, VStack, Heading, Text } from '@chakra-ui/react';
-import { Navbar } from '../components/navbar/Navbar';
-import { PlanSidebar } from '../components/navigation/PlanSidebar';
-import { useColorModeValue } from '../components/ui/color-mode';
-import { useLocation } from 'react-router-dom';
+import { Navbar } from '../../components/navbar/Navbar';
+import { PlanSidebar } from '../../components/navigation/PlanSidebar';
+import { useColorModeValue } from '../../components/ui/color-mode';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   InitialCapitalSimulation,
@@ -12,7 +12,8 @@ import {
   TechnicalSpecs,
   Roadmap,
   SupplierMap,
-} from '../components/plan';
+} from '../../components/plan';
+import { getProject, type ProjectResponse } from '../onboarding/services/projectApi';
 
 /**
  * Plan Page - Halaman rencana lengkap dengan submenu
@@ -24,7 +25,28 @@ export function PlanPage() {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [currentHash, setCurrentHash] = useState(location.hash || '#ringkasan');
+  const [projectData, setProjectData] = useState<ProjectResponse | null>(null);
+
+  // Get project ID from query params or location state
+  const projectId = searchParams.get('project') || location.state?.projectId;
+
+  // Fetch project data if project ID is available
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!projectId) return;
+      
+      try {
+        const data = await getProject(projectId);
+        setProjectData(data);
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+      }
+    };
+
+    fetchProject();
+  }, [projectId]);
 
   useEffect(() => {
     // Listen for hash changes
@@ -170,7 +192,14 @@ export function PlanPage() {
             <Text color={textSecondary}>
               Peta interaktif lokasi supplier: bibit, pakan, pasar, dan peralatan.
             </Text>
-            <SupplierMap />
+            <SupplierMap 
+              jenisIkan={projectData?.data.jenis_ikan}
+              kota={projectData?.data.kabupaten_id}
+              centerLocation={projectData?.data.lat && projectData?.data.lang 
+                ? { lat: projectData.data.lat, lng: projectData.data.lang }
+                : undefined
+              }
+            />
           </VStack>
         );
       

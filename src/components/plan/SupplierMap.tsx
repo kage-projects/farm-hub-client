@@ -1,24 +1,21 @@
-import { VStack, HStack, Text, Box, Badge, Button, SimpleGrid } from '@chakra-ui/react';
+import { VStack, HStack, Text, Box, Badge, Button, SimpleGrid, Spinner } from '@chakra-ui/react';
 import { Card, CardBody, CardHeader } from '../surfaces/Card';
 import { useColorModeValue } from '../ui/color-mode';
 import { FiMapPin, FiPackage, FiShoppingCart, FiTool } from 'react-icons/fi';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as React from 'react';
+import { searchSuppliers, type SupplierLocation } from '../../services/googleMapsPlacesApi';
+import { Alert } from '../feedback/Alert';
+import { loadGoogleMapsAPI } from '../../utils/googleMapsLoader';
 
-export interface SupplierLocation {
-  id: string;
-  name: string;
-  type: 'bibit' | 'pakan' | 'pasar' | 'peralatan';
-  address: string;
-  coordinates?: { lat: number; lng: number };
-  distance?: string;
-  contact?: string;
-  rating?: number;
-}
+// Re-export SupplierLocation for backward compatibility
+export type { SupplierLocation };
 
 export interface SupplierMapProps {
   suppliers?: SupplierLocation[];
   centerLocation?: { lat: number; lng: number };
+  jenisIkan?: string;
+  kota?: string;
 }
 
 type SupplierFilterType = 'all' | 'bibit' | 'pakan' | 'pasar' | 'peralatan';
@@ -30,75 +27,351 @@ type SupplierFilterType = 'all' | 'bibit' | 'pakan' | 'pasar' | 'peralatan';
  * - Pasar/penjualan
  * - Peralatan
  */
-export function SupplierMap({ suppliers, centerLocation }: SupplierMapProps) {
+export function SupplierMap({ suppliers, centerLocation, jenisIkan, kota }: SupplierMapProps) {
   const textPrimary = useColorModeValue('gray.900', 'gray.50');
   const textSecondary = useColorModeValue('gray.600', 'gray.400');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const [filterType, setFilterType] = useState<SupplierFilterType>('all');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fetchedSuppliers, setFetchedSuppliers] = useState<SupplierLocation[]>([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
 
-  const defaultSuppliers: SupplierLocation[] = suppliers || [
-    {
-      id: '1',
-      name: 'Peternakan Ikan Lele Sumber Rezeki',
-      type: 'bibit',
-      address: 'Jl. Raya Padang-Pariaman KM 12, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '15 km',
-      contact: '0812-3456-7890',
-      rating: 4.5,
-    },
-    {
-      id: '2',
-      name: 'Toko Pakan Ikan Makmur',
-      type: 'pakan',
-      address: 'Jl. Ahmad Yani No. 45, Padang, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '8 km',
-      contact: '0813-4567-8901',
-      rating: 4.8,
-    },
-    {
-      id: '3',
-      name: 'Pasar Ikan Terpadu Padang',
-      type: 'pasar',
-      address: 'Jl. Bung Hatta, Padang, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '12 km',
-      contact: '0751-123456',
-      rating: 4.3,
-    },
-    {
-      id: '4',
-      name: 'PT Peralatan Budidaya Indonesia',
-      type: 'peralatan',
-      address: 'Jl. Sudirman No. 88, Padang, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '10 km',
-      contact: '0814-5678-9012',
-      rating: 4.7,
-    },
-    {
-      id: '5',
-      name: 'UD Sumber Bibit Unggul',
-      type: 'bibit',
-      address: 'Jl. Raya Bukittinggi-Padang, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '25 km',
-      contact: '0815-6789-0123',
-      rating: 4.6,
-    },
-    {
-      id: '6',
-      name: 'Supplier Pakan Premium',
-      type: 'pakan',
-      address: 'Jl. Gajah Mada No. 22, Padang, Sumatera Barat',
-      coordinates: { lat: -0.94924, lng: 100.35427 },
-      distance: '6 km',
-      contact: '0816-7890-1234',
-      rating: 4.9,
-    },
-  ];
+  // Load Google Maps API (singleton - will only load once)
+  useEffect(() => {
+    loadGoogleMapsAPI()
+      .then(() => {
+        setMapLoaded(true);
+      })
+      .catch((error) => {
+        console.error('Failed to load Google Maps API:', error);
+        setMapLoaded(true); // Set to true anyway to show fallback
+      });
+  }, []);
+
+  // Fetch suppliers from Google Maps Places API
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      // Use provided suppliers if available, otherwise fetch from API
+      if (suppliers && suppliers.length > 0) {
+        setFetchedSuppliers(suppliers);
+        return;
+      }
+
+      // Need kota to fetch from API (centerLocation is optional, but recommended)
+      if (!kota) {
+        console.log('SupplierMap: kota tidak ada, skip fetch');
+        return;
+      }
+
+      // Log untuk debugging
+      console.log('SupplierMap: Fetching suppliers dengan:', {
+        kota,
+        jenisIkan,
+        centerLocation,
+      });
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Generate keywords based on supplier type
+        const supplierTypes = [
+          {
+            type: 'bibit' as const,
+            keyword: jenisIkan ? `bibit ${jenisIkan} ${kota}` : `bibit ikan ${kota}`,
+          },
+          {
+            type: 'pakan' as const,
+            keyword: `pakan ikan ${kota}`,
+          },
+          {
+            type: 'pasar' as const,
+            keyword: `pasar ikan ${kota}`,
+          },
+          {
+            type: 'peralatan' as const,
+            keyword: `peralatan budidaya ikan ${kota}`,
+          },
+        ];
+
+        // Use default location if centerLocation is not available
+        const searchLocation = centerLocation || { lat: -0.94924, lng: 100.35427 }; // Default: Padang
+        const results = await searchSuppliers(supplierTypes, searchLocation, 10000, jenisIkan, kota);
+        setFetchedSuppliers(results);
+      } catch (err: any) {
+        const errorMessage = err.message || 'Gagal mengambil data supplier';
+        setError(errorMessage);
+        console.error('Error fetching suppliers:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSuppliers();
+  }, [suppliers, centerLocation, jenisIkan, kota]);
+
+  // Use only fetched suppliers or provided suppliers (no dummy data)
+  const defaultSuppliers: SupplierLocation[] = fetchedSuppliers.length > 0 ? fetchedSuppliers : (suppliers || []);
+
+  // Initialize map and markers
+  useEffect(() => {
+    if (!mapLoaded || !window.google?.maps || !mapRef.current) {
+      console.log('SupplierMap: Map initialization skipped - mapLoaded:', mapLoaded, 'google.maps:', !!window.google?.maps, 'mapRef:', !!mapRef.current);
+      return;
+    }
+
+    // Use default location if centerLocation is not provided
+    const mapCenter = centerLocation || { lat: -0.94924, lng: 100.35427 }; // Default: Padang
+    console.log('SupplierMap: Initializing map with center:', mapCenter);
+
+    // Wait a bit for DOM to be ready
+    const timer = setTimeout(() => {
+      if (!mapRef.current) {
+        console.log('SupplierMap: mapRef.current tidak ada saat timeout');
+        return;
+      }
+
+      // Initialize map if not exists
+      if (!mapInstanceRef.current) {
+        try {
+          console.log('SupplierMap: Creating new map instance');
+          mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+            center: mapCenter,
+            zoom: 13,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            zoomControl: false,
+            rotateControl: false,
+            scaleControl: false,
+            disableDefaultUI: true,
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+              {
+                featureType: 'transit',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+              {
+                featureType: 'administrative',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }],
+              },
+              {
+                featureType: 'road',
+                elementType: 'labels.text.fill',
+                stylers: [{ visibility: 'on' }],
+              },
+              {
+                featureType: 'road',
+                elementType: 'labels.text.stroke',
+                stylers: [{ visibility: 'on' }],
+              },
+              {
+                featureType: 'road.highway',
+                elementType: 'labels',
+                stylers: [{ visibility: 'on' }],
+              },
+              {
+                featureType: 'road.arterial',
+                elementType: 'labels',
+                stylers: [{ visibility: 'on' }],
+              },
+              {
+                featureType: 'road.local',
+                elementType: 'labels',
+                stylers: [{ visibility: 'on' }],
+              },
+            ],
+          });
+          console.log('SupplierMap: Map instance created:', mapInstanceRef.current);
+          
+          // Trigger resize to ensure map renders correctly after a short delay
+          setTimeout(() => {
+            if (mapInstanceRef.current && window.google?.maps?.event) {
+              try {
+                (window.google.maps.event as any).trigger(mapInstanceRef.current, 'resize');
+                console.log('SupplierMap: Resize event triggered');
+              } catch (e) {
+                console.warn('Could not trigger resize event:', e);
+              }
+            }
+          }, 200);
+        } catch (error) {
+          console.error('Error initializing map:', error);
+        }
+      } else {
+        console.log('SupplierMap: Updating existing map center');
+        mapInstanceRef.current.setCenter(mapCenter);
+        mapInstanceRef.current.setZoom(13);
+        // Trigger resize
+        setTimeout(() => {
+          if (mapInstanceRef.current && window.google?.maps?.event) {
+            try {
+              (window.google.maps.event as any).trigger(mapInstanceRef.current, 'resize');
+            } catch (e) {
+              console.warn('Could not trigger resize event:', e);
+            }
+          }
+        }, 100);
+      }
+
+      // Clear existing markers
+      markersRef.current.forEach((marker: any) => {
+        marker.setMap(null);
+      });
+      markersRef.current = [];
+
+      // Add center marker (your location) if centerLocation is provided
+      if (centerLocation && mapInstanceRef.current) {
+        const centerMarker = new window.google.maps.Marker({
+          position: centerLocation,
+          map: mapInstanceRef.current,
+          title: 'Lokasi Proyek',
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#ef4444',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+        });
+        markersRef.current.push(centerMarker);
+      } else if (mapInstanceRef.current) {
+        // Add default center marker if centerLocation is not provided
+        const centerMarker = new window.google.maps.Marker({
+          position: mapCenter,
+          map: mapInstanceRef.current,
+          title: 'Lokasi Pusat',
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#6b7280',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+        });
+        markersRef.current.push(centerMarker);
+      }
+
+      // Add supplier markers
+      const filteredSuppliers = filterType === 'all' 
+        ? defaultSuppliers 
+        : defaultSuppliers.filter(s => s.type === filterType);
+
+      const bounds = new window.google.maps.LatLngBounds();
+
+      filteredSuppliers.forEach((supplier) => {
+        if (!supplier.coordinates || !mapInstanceRef.current) return;
+
+        const markerColor = getMarkerColor(supplier.type);
+        const marker = new window.google.maps.Marker({
+          position: supplier.coordinates,
+          map: mapInstanceRef.current,
+          title: supplier.name,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: markerColor,
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+        });
+
+        // Add click listener to show info window
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px;">${supplier.name}</h3>
+              <p style="margin: 4px 0; font-size: 12px; color: #666;">${supplier.address}</p>
+              ${supplier.distance ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">📍 ${supplier.distance}</p>` : ''}
+              ${supplier.rating ? `<p style="margin: 4px 0; font-size: 12px; color: #666;">⭐ ${supplier.rating}</p>` : ''}
+            </div>
+          `,
+        });
+
+        marker.addListener('click', () => {
+          if (infoWindowRef.current) {
+            infoWindowRef.current.close();
+          }
+          infoWindow.open(mapInstanceRef.current, marker);
+          infoWindowRef.current = infoWindow;
+        });
+
+        markersRef.current.push(marker);
+        bounds.extend(supplier.coordinates);
+      });
+
+      // Fit bounds to show all markers
+      if (filteredSuppliers.length > 0 && bounds.getNorthEast() && mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.fitBounds(bounds);
+          // Trigger resize and adjust zoom
+          setTimeout(() => {
+            if (mapInstanceRef.current && window.google?.maps?.event) {
+              try {
+                (window.google.maps.event as any).trigger(mapInstanceRef.current, 'resize');
+                const currentZoom = mapInstanceRef.current.getZoom();
+                if (currentZoom > 15) {
+                  mapInstanceRef.current.setZoom(15);
+                }
+              } catch (e) {
+                console.warn('Error adjusting zoom:', e);
+              }
+            }
+          }, 200);
+        } catch (error) {
+          console.error('Error fitting bounds:', error);
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter(mapCenter);
+            mapInstanceRef.current.setZoom(13);
+          }
+        }
+      } else if (mapInstanceRef.current) {
+        mapInstanceRef.current.setCenter(mapCenter);
+        mapInstanceRef.current.setZoom(13);
+        setTimeout(() => {
+          if (mapInstanceRef.current && window.google?.maps?.event) {
+            try {
+              (window.google.maps.event as any).trigger(mapInstanceRef.current, 'resize');
+            } catch (e) {
+              console.warn('Could not trigger resize event:', e);
+            }
+          }
+        }, 100);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [mapLoaded, defaultSuppliers, filterType, centerLocation]);
+
+  const getMarkerColor = (type: string): string => {
+    switch (type) {
+      case 'bibit':
+        return '#10b981'; // Emerald green - terang dan jelas
+      case 'pakan':
+        return '#3b82f6'; // Blue - biru terang
+      case 'pasar':
+        return '#f59e0b'; // Amber/Orange - kuning orange terang
+      case 'peralatan':
+        return '#ef4444'; // Red - merah terang
+      default:
+        return '#6b7280'; // Gray
+    }
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -168,6 +441,27 @@ export function SupplierMap({ suppliers, centerLocation }: SupplierMapProps) {
 
   return (
     <VStack align="stretch" gap={4}>
+      {/* Loading State */}
+      {isLoading && (
+        <Card variant="elevated">
+          <CardBody>
+            <VStack gap={4}>
+              <Spinner size="lg" color="brand.500" />
+              <Text color={textSecondary}>Memuat data supplier dari Google Maps...</Text>
+            </VStack>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {error && !isLoading && (
+        <Alert 
+          status="error" 
+          variant="subtle"
+          title={error}
+        />
+      )}
+
       {/* Filter Buttons */}
       <Card variant="elevated">
         <CardHeader>
@@ -184,16 +478,18 @@ export function SupplierMap({ suppliers, centerLocation }: SupplierMapProps) {
                 variant={filterType === option.type ? 'solid' : 'outline'}
                 colorScheme={filterType === option.type ? 'brand' : 'gray'}
                 onClick={() => setFilterType(option.type)}
-                leftIcon={<Box>{option.icon}</Box>}
               >
-                {option.label}
+                <HStack gap={2}>
+                  <Box>{option.icon}</Box>
+                  <Text>{option.label}</Text>
+                </HStack>
               </Button>
             ))}
           </SimpleGrid>
         </CardBody>
       </Card>
 
-      {/* Map Placeholder */}
+      {/* Google Maps */}
       <Card variant="elevated">
         <CardHeader>
           <Text fontSize="lg" fontWeight="semibold" color={textPrimary}>
@@ -202,122 +498,71 @@ export function SupplierMap({ suppliers, centerLocation }: SupplierMapProps) {
         </CardHeader>
         <CardBody>
           <Box
-            w="full"
+            ref={mapRef}
+            w="100%"
+            width="100%"
             h="400px"
-            bg={bgColor}
+            height="400px"
+            minH="400px"
             borderRadius="md"
-            border="2px dashed"
+            border="1px solid"
             borderColor={borderColor}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            position="relative"
             overflow="hidden"
+            position="relative"
+            bg={bgColor}
+            style={{ minHeight: '400px' }}
           >
-            {/* Simple SVG Map Representation */}
-            <svg width="100%" height="100%" viewBox="0 0 400 300">
-              {/* Background */}
-              <rect width="400" height="300" fill={useColorModeValue('#e0f2fe', '#1e293b')} />
-              
-              {/* Roads */}
-              <path
-                d="M 50 150 L 150 120 L 250 140 L 350 130"
-                stroke={useColorModeValue('#94a3b8', '#64748b')}
-                strokeWidth="3"
-                fill="none"
-              />
-              <path
-                d="M 100 50 L 100 250"
-                stroke={useColorModeValue('#94a3b8', '#64748b')}
-                strokeWidth="3"
-                fill="none"
-              />
-              <path
-                d="M 200 50 L 200 250"
-                stroke={useColorModeValue('#94a3b8', '#64748b')}
-                strokeWidth="3"
-                fill="none"
-              />
-              
-              {/* Supplier Markers */}
-              {filteredSuppliers.slice(0, 4).map((supplier, idx) => {
-                const positions = [
-                  { x: 120, y: 100 },
-                  { x: 180, y: 120 },
-                  { x: 240, y: 140 },
-                  { x: 300, y: 130 },
-                ];
-                const pos = positions[idx] || { x: 150, y: 150 };
-                const color =
-                  supplier.type === 'bibit'
-                    ? '#25521a'
-                    : supplier.type === 'pakan'
-                    ? '#183d50'
-                    : supplier.type === 'pasar'
-                    ? '#be8900'
-                    : '#6b7280';
-
-                return (
-                  <g key={supplier.id}>
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r="12"
-                      fill={color}
-                      stroke="white"
-                      strokeWidth="2"
-                    />
-                    <text
-                      x={pos.x}
-                      y={pos.y + 4}
-                      fontSize="10"
-                      fill="white"
-                      textAnchor="middle"
-                      fontWeight="bold"
-                    >
-                      {idx + 1}
-                    </text>
-                  </g>
-                );
-              })}
-              
-              {/* Center Location Marker (Your Farm) */}
-              <g>
-                <circle cx="200" cy="150" r="15" fill="#ef4444" stroke="white" strokeWidth="3" />
-                <text
-                  x="200"
-                  y="155"
-                  fontSize="12"
-                  fill="white"
-                  textAnchor="middle"
-                  fontWeight="bold"
-                >
-                  You
-                </text>
-              </g>
-            </svg>
-            
-            {/* Overlay Info */}
+            {!mapLoaded && (
+              <Box
+                position="absolute"
+                inset={0}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                bg={bgColor}
+                zIndex={10}
+              >
+                <VStack gap={2}>
+                  <Spinner size="lg" color="brand.500" />
+                  <Text fontSize="sm" color={textSecondary}>
+                    Memuat peta...
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+            {mapLoaded && !window.google?.maps && (
             <Box
               position="absolute"
-              bottom={4}
-              left={4}
-              right={4}
-              bg={useColorModeValue('rgba(255, 255, 255, 0.95)', 'rgba(30, 41, 59, 0.95)')}
-              p={3}
-              borderRadius="md"
-              backdropFilter="blur(8px)"
-            >
-              <Text fontSize="xs" color={textSecondary} textAlign="center">
-                💡 Integrate dengan Google Maps API atau Leaflet untuk peta interaktif
+                inset={0}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                bg={bgColor}
+                zIndex={10}
+              >
+                <Text fontSize="sm" color={textSecondary}>
+                  Gagal memuat Google Maps API
               </Text>
             </Box>
+            )}
           </Box>
         </CardBody>
       </Card>
 
-      {/* Supplier List */}
-      {Object.entries(groupedSuppliers).map(([type, typeSuppliers]) => (
+      {/* Supplier List - Only show if there are suppliers */}
+      {defaultSuppliers.length === 0 && !isLoading && !error && (
+        <Card variant="elevated">
+          <CardBody>
+            <Box textAlign="center" py={8}>
+              <Text color={textSecondary}>
+                Tidak ada supplier ditemukan. Pastikan lokasi proyek sudah diatur.
+              </Text>
+          </Box>
+        </CardBody>
+      </Card>
+      )}
+
+      {defaultSuppliers.length > 0 && Object.entries(groupedSuppliers).map(([type, typeSuppliers]) => (
         <Card key={type} variant="elevated">
           <CardHeader>
             <HStack>

@@ -14,7 +14,7 @@ import { QCPage } from '../pages/QCPage';
 import { HarvestPlannerPage } from '../pages/HarvestPlannerPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
 import { SummaryPage } from '../pages/SummaryPage';
-import { PlanPage } from '../pages/PlanPage';
+import { PlanPage } from '../features/plan/PlanPage';
 import { QuickPlanPage } from '../pages/QuickPlanPage';
 import { UIShowcase } from '../pages/UIShowcase';
 
